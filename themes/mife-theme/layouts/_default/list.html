@@ -1,5 +1,5 @@
 {{ define "main" }}
-<section class="section" style="padding-top: 120px;">
+<section class="section list-page">
     <h2 class="section-title">{{ .Title }}</h2>
     <div class="post-list">
         {{ range .Pages }}
@@ -14,4 +14,22 @@
         {{ end }}
     </div>
 </section>
+
+<style>
+    .list-page {
+        padding-top: 120px;
+    }
+
+    @media (max-width: 768px) {
+        .list-page {
+            padding-top: 100px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .list-page {
+            padding-top: 90px;
+        }
+    }
+</style>
 {{ end }}
