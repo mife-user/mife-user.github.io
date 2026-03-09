@@ -2,18 +2,25 @@
 title: 'Termux 从零搭建博客：npm + AI + Git + Hugo 完整操作记录/'
 date: 2026-03-09T12:00:00+08:00
 draft: false
-
+tags: -Termux - Hugo
 ---
 
 ## 前言
 兴致启然，尝试用 Termux 完成了一整套开发流程：安装 npm、安装 Qwen AI、安装 Git、搭建 Hugo 静态博客，并成功本地运行。本文记录每一步细节、命令和踩坑点。
 
 ## 一、更新 Termux 环境
+在商城安装后
 打开 Termux，先更新源和软件，避免安装出错：
 ```bash
 pkg update && pkg upgrade -y
 ```
- 
+本质为linux，用其指令
+常见：
+```bash
+cd //用于进入某文件夹
+clear //清空
+//忘了，自己学🤫
+``` 
 ## 二、安装 Node.js 和 npm
 
 npm 用于安装各种工具包，包括后面的 AI 工具：
@@ -31,7 +38,7 @@ node -v
 npm -v
  
 ``` 
-出现版本号，说明安装完成。
+出现版本号，说明安装完成。手机还是很好用的，不用管环境变量😍
  
 ## 三、安装 Qwen AI（通义千问）
 （可以自己找在终端运行的AI用，较为推荐千问）
@@ -43,7 +50,7 @@ npm -v
 npm install -g qwen
  
 ``` 
-安装后可以在 Termux 里直接使用 AI 辅助写命令、写代码。
+安装后可以在 Termux 里直接使用 AI 辅助写命令、写代码。可以自己学习npm相关代码指令，像一些工具都会用到，很有用
  
 ## 四、安装 Git
  
@@ -55,6 +62,13 @@ npm install -g qwen
 pkg install git -y
  
 ``` 
+获取ssh用于上传：(直接回车，可以自己学习设置密码）
+
+```bash
+# 把邮箱换成你 GitHub 注册邮箱
+ssh-keygen -t ed25519 -C "your_github_email@xxx.com"
+
+```
 配置 Git 用户名和邮箱：
  
 ```bash
