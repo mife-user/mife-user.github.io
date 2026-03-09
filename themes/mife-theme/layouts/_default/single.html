@@ -1,0 +1,14 @@
+{{ define "main" }}
+<article style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+    <header style="margin-bottom: 3rem;">
+        <h1 style="font-size: 2.5rem; background: linear-gradient(135deg, var(--gold-light), var(--gold-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 1rem;">{{ .Title }}</h1>
+        <div class="post-date" style="font-size: 1rem;">{{ .Date.Format "2006-01-02" }}</div>
+    </header>
+    <div class="content" style="line-height: 2; color: var(--text-secondary);">
+        {{ .Content }}
+    </div>
+    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+        <a href="/" class="btn" style="display: inline-block;" data-zh="← 返回首页" data-en="← Back to Home">← 返回首页</a>
+    </div>
+</article>
+{{ end }}

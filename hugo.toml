@@ -1,0 +1,27 @@
+baseURL = 'https://mife-user.github.io/'
+languageCode = 'zh-CN'
+title = 'MIFE Blog'
+theme = 'mife-theme'
+
+[params]
+  author = 'MIFE'
+  username = 'mife'
+  bio = '开发者 · 创作者 · 探索者'
+  github = 'https://github.com/mife-user'
+  email = '15723556393@163.com'
+  avatar = 'images/avatar.jpg'
+  background = 'images/background.jpg'
+
+[menu]
+  [[menu.main]]
+    name = '关于'
+    url = '#about'
+    weight = 1
+  [[menu.main]]
+    name = '文章'
+    url = '#posts'
+    weight = 2
+  [[menu.main]]
+    name = '项目'
+    url = '#projects'
+    weight = 3

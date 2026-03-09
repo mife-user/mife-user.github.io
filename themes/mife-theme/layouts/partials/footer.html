@@ -1,0 +1,23 @@
+<!-- 页脚 -->
+<footer>
+    <p>© {{ now.Year }} <span class="gold-text">{{ .Site.Params.author }}</span>. <span data-zh="版权所有" data-en="All rights reserved">版权所有</span>.</p>
+    <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+        <span data-zh="技术支持" data-en="Powered by">技术支持</span>: <span class="gold-text">GitHub Pages</span>
+    </p>
+</footer>
+
+<script>
+    let currentLang = 'zh';
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'zh' ? 'en' : 'zh';
+        const langBtn = document.querySelector('.lang-btn');
+        langBtn.textContent = currentLang === 'zh' ? 'EN' : '中文';
+        document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+
+        // 更新所有具有 data-zh 和 data-en 属性的元素
+        document.querySelectorAll('[data-zh][data-en]').forEach(el => {
+            el.textContent = currentLang === 'zh' ? el.getAttribute('data-zh') : el.getAttribute('data-en');
+        });
+    }
+</script>

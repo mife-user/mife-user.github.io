@@ -1,0 +1,12 @@
+name = 'Mife Theme'
+license = 'MIT'
+licenselink = 'https://github.com/mife-user/mife-user.github.io/blob/main/LICENSE'
+description = 'Custom theme for MIFE blog'
+homepage = 'https://github.com/mife-user/mife-user.github.io'
+tags = ['blog', 'personal', 'dark', 'gold']
+features = ['responsive', 'dark-mode']
+min_version = '0.120.0'
+
+[author]
+  name = 'MIFE'
+  homepage = 'https://github.com/mife-user'

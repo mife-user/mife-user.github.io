@@ -1,0 +1,50 @@
+{{ define "main" }}
+<!-- 个人简介 -->
+<section id="about" class="hero">
+    <div class="avatar" title="{{ .Site.Params.username }}"></div>
+    <h1>{{ .Site.Params.author }}</h1>
+    <p class="username">@{{ .Site.Params.username }}</p>
+    <p class="bio" data-zh="{{ .Site.Params.bio }}" data-en="Developer · Creator · Explorer">{{ .Site.Params.bio }}</p>
+    <div class="social-links">
+        <a href="{{ .Site.Params.github }}" target="_blank" data-zh="GitHub" data-en="GitHub">GitHub</a>
+        <a href="mailto:{{ .Site.Params.email }}" data-zh="邮箱" data-en="Email">邮箱</a>
+    </div>
+</section>
+
+<!-- 文章列表 -->
+<section id="posts" class="section">
+    <h2 class="section-title" data-zh="文章" data-en="ARTICLES">文章</h2>
+    <div class="post-list">
+        {{ range where .Site.RegularPages "Section" "posts" | first 10 }}
+        <article class="post-card">
+            <div class="post-date">{{ .Date.Format "2006-01-02" }}</div>
+            <h3 class="post-title">
+                <a href="{{ .Permalink }}">{{ .Title }}</a>
+            </h3>
+            <p class="post-excerpt">{{ .Summary | truncate 150 }}</p>
+            <a href="{{ .Permalink }}" class="read-more" data-zh="阅读更多 →" data-en="Read More →">阅读更多 →</a>
+        </article>
+        {{ end }}
+    </div>
+</section>
+
+<!-- 项目展示 -->
+<section id="projects" class="section">
+    <h2 class="section-title" data-zh="项目" data-en="PROJECTS">项目</h2>
+    <div class="project-grid">
+        {{ range where .Site.RegularPages "Section" "projects" | first 6 }}
+        <div class="project-card">
+            <h3 class="project-title">{{ .Title }}</h3>
+            <p class="project-desc">{{ .Summary | truncate 100 }}</p>
+            <div class="project-tags">
+                {{ with .Params.tags }}
+                {{ range . }}
+                <span class="tag">{{ . }}</span>
+                {{ end }}
+                {{ end }}
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</section>
+{{ end }}
