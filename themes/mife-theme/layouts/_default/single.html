@@ -10,7 +10,7 @@
     <div class="article-footer">
         <a href="/" class="btn" data-zh="← 返回首页" data-en="← Back to Home">← 返回首页</a>
     </div>
-    
+
     {{ if .Site.Params.enableComments }}
         {{ partial "github-comments.html" . }}
     {{ end }}
@@ -25,6 +25,8 @@
 
     .article-header {
         margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
     }
 
     .article-title {
@@ -34,11 +36,319 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
         margin-bottom: 1rem;
+        line-height: 1.3;
     }
 
     .content {
         line-height: 2;
+        color: var(--text-primary);
+        font-size: 1.05rem;
+    }
+
+    /* Markdown 基础样式 */
+    .content p {
+        margin-bottom: 1.5rem;
+        text-align: justify;
+    }
+
+    .content h1,
+    .content h2,
+    .content h3,
+    .content h4,
+    .content h5,
+    .content h6 {
+        margin-top: 2.5rem;
+        margin-bottom: 1.2rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--text-primary);
+    }
+
+    .content h1 {
+        font-size: 2rem;
+        padding-bottom: 0.8rem;
+        border-bottom: 2px solid var(--gold-dark);
+    }
+
+    .content h2 {
+        font-size: 1.75rem;
+        padding-bottom: 0.6rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .content h3 {
+        font-size: 1.5rem;
+        color: var(--gold-light);
+    }
+
+    .content h4 {
+        font-size: 1.25rem;
+    }
+
+    .content h5,
+    .content h6 {
+        font-size: 1.1rem;
+    }
+
+    /* 链接样式 */
+    .content a {
+        color: var(--gold-primary);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .content a:hover {
+        color: var(--gold-light);
+        border-bottom-color: var(--gold-primary);
+    }
+
+    /* 列表样式 */
+    .content ul,
+    .content ol {
+        margin-bottom: 1.5rem;
+        padding-left: 2rem;
+    }
+
+    .content ul li,
+    .content ol li {
+        margin-bottom: 0.5rem;
+        line-height: 1.9;
+    }
+
+    .content ul {
+        list-style-type: disc;
+    }
+
+    .content ul ul {
+        list-style-type: circle;
+        margin-top: 0.5rem;
+    }
+
+    .content ul ul ul {
+        list-style-type: square;
+    }
+
+    /* 引用块 */
+    .content blockquote {
+        margin: 1.5rem 0;
+        padding: 1rem 1.5rem;
+        border-left: 4px solid var(--gold-primary);
+        background: rgba(26, 26, 26, 0.6);
+        border-radius: 0 8px 8px 0;
         color: var(--text-secondary);
+        font-style: italic;
+    }
+
+    .content blockquote p {
+        margin-bottom: 0.5rem;
+    }
+
+    .content blockquote blockquote {
+        margin: 0.5rem 0;
+    }
+
+    /* 代码块 */
+    .content pre {
+        margin: 1.5rem 0;
+        padding: 1.2rem;
+        background: rgba(10, 10, 10, 0.9);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+    }
+
+    .content code {
+        font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Consolas, Monaco, 'Courier New', monospace;
+        font-size: 0.9em;
+        background: rgba(26, 26, 26, 0.8);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        color: var(--gold-light);
+    }
+
+    .content pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }
+
+    .content p code {
+        color: var(--gold-primary);
+        background: rgba(212, 175, 55, 0.1);
+    }
+
+    /* 表格样式 */
+    .content table {
+        width: 100%;
+        margin: 1.5rem 0;
+        border-collapse: collapse;
+        background: rgba(26, 26, 26, 0.6);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .content table thead {
+        background: rgba(212, 175, 55, 0.15);
+    }
+
+    .content table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gold-primary);
+        border-bottom: 2px solid var(--gold-dark);
+    }
+
+    .content table td {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-secondary);
+    }
+
+    .content table tr:hover {
+        background: rgba(212, 175, 55, 0.05);
+    }
+
+    .content table tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* 图片样式 */
+    .content img {
+        max-width: 100%;
+        height: auto;
+        margin: 1.5rem auto;
+        display: block;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .content figure {
+        margin: 1.5rem 0;
+    }
+
+    .content figure img {
+        margin: 0;
+    }
+
+    .content figcaption {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-top: 0.8rem;
+        font-style: italic;
+    }
+
+    /* 分割线 */
+    .content hr {
+        margin: 2.5rem 0;
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
+    }
+
+    /* 强调文本 */
+    .content strong {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .content em {
+        font-style: italic;
+        color: var(--text-secondary);
+    }
+
+    .content del {
+        color: var(--text-muted);
+        text-decoration: line-through;
+    }
+
+    /* 任务列表 */
+    .content ul.contains-task-list {
+        list-style: none;
+        padding-left: 0.5rem;
+    }
+
+    .content .task-list-item {
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .content .task-list-item input[type="checkbox"] {
+        margin-top: 0.4rem;
+        accent-color: var(--gold-primary);
+    }
+
+    /* 脚注样式 */
+    .content .footnotes {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.9rem;
+    }
+
+    .content .footnotes ol {
+        padding-left: 1.5rem;
+    }
+
+    .content .footnotes li {
+        margin-bottom: 0.5rem;
+    }
+
+    .content .footnote-ref {
+        color: var(--gold-primary);
+        font-size: 0.8rem;
+        vertical-align: super;
+        margin-left: 2px;
+    }
+
+    .content .footnote-backref {
+        color: var(--gold-primary);
+        text-decoration: none;
+    }
+
+    .content .footnote-backref:hover {
+        color: var(--gold-light);
+    }
+
+    /* 高亮样式 */
+    .content mark {
+        background: rgba(212, 175, 55, 0.3);
+        color: var(--text-primary);
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+    }
+
+    /* 摘要/提示框 */
+    .content .alert,
+    .content .tip,
+    .content .warning,
+    .content .note {
+        padding: 1rem 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 8px;
+        border-left: 4px solid;
+        background: rgba(26, 26, 26, 0.6);
+    }
+
+    .content .alert,
+    .content .tip {
+        border-color: var(--gold-primary);
+    }
+
+    .content .warning {
+        border-color: #ff6b6b;
+    }
+
+    .content .note {
+        border-color: #4ecdc4;
     }
 
     .article-footer {
@@ -47,6 +357,7 @@
         border-top: 1px solid var(--border-color);
     }
 
+    /* 响应式优化 */
     @media (max-width: 768px) {
         .single-article {
             padding: 1.5rem;
@@ -58,6 +369,34 @@
 
         .article-header {
             margin-bottom: 2rem;
+        }
+
+        .content {
+            font-size: 1rem;
+        }
+
+        .content h1 {
+            font-size: 1.6rem;
+        }
+
+        .content h2 {
+            font-size: 1.4rem;
+        }
+
+        .content h3 {
+            font-size: 1.25rem;
+        }
+
+        .content table {
+            font-size: 0.9rem;
+        }
+
+        .content pre {
+            padding: 1rem;
+        }
+
+        .content code {
+            font-size: 0.85rem;
         }
     }
 
@@ -73,6 +412,34 @@
         .content {
             font-size: 0.95rem;
             line-height: 1.9;
+        }
+
+        .content h1 {
+            font-size: 1.4rem;
+        }
+
+        .content h2 {
+            font-size: 1.25rem;
+        }
+
+        .content h3 {
+            font-size: 1.1rem;
+        }
+
+        .content blockquote {
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+        }
+
+        .content pre {
+            padding: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .content table {
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
     }
 </style>

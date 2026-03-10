@@ -22,10 +22,36 @@
         font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         line-height: 1.8;
         color: var(--text-primary);
-        background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)),
-                    url('{{ .Site.Params.background | relURL }}') no-repeat center center fixed;
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)),
+                    url('{{ .Site.Params.background | relURL }}') no-repeat center center;
         background-size: cover;
+        background-attachment: scroll;
         min-height: 100vh;
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+    }
+
+    /* PC 端背景优化 - 视差效果 */
+    @media (min-width: 1024px) {
+        body {
+            background-attachment: fixed;
+        }
+    }
+
+    /* 移动端背景优化 - 禁用固定背景以提升性能 */
+    @media (max-width: 768px) {
+        body {
+            background-attachment: scroll;
+            background-position: center top;
+        }
+    }
+
+    /* 小屏手机优化 */
+    @media (max-width: 480px) {
+        body {
+            background-position: center center;
+        }
     }
 
     /* 导航栏 */
