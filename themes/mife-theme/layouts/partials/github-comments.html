@@ -1,6 +1,7 @@
 {{- $githubUsername := .Site.Params.githubUsername | default "mife-user" -}}
 {{- $repo := .Site.Params.repo | default "my-blog" -}}
 {{- $issueLabel := .Site.Params.issueLabel | default "comments" -}}
+{{- $githubToken := os.Getenv "GITHUB_TOKEN" -}}
 
 <div class="comments-section" id="comments">
     <div class="comments-header">
@@ -371,6 +372,7 @@
     const label = '{{ $issueLabel }}';
     const pageTitle = '{{ .Title | htmlEscape }}';
     const pageUrl = '{{ .Permalink }}';
+    const githubToken = '{{ $githubToken }}';
     // 从页面 URL 提取 slug（文章标识）
     const pageSlug = pageUrl.replace(/\/$/, '').split('/').pop();
 
@@ -404,8 +406,16 @@
     // 获取评论
     async function fetchComments() {
         try {
+            // 构建请求头，如果有 token 则使用认证
+            const headers = {};
+            if (githubToken && githubToken !== '') {
+                headers['Authorization'] = `token ${githubToken}`;
+            }
+
             // 先获取所有 issues
-            const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repo}/issues?state=all&per_page=100`);
+            const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repo}/issues?state=all&per_page=100`, {
+                headers: headers
+            });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

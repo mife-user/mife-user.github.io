@@ -3,6 +3,10 @@ languageCode = 'zh-CN'
 title = 'MIFE Blog'
 theme = 'mife-theme'
 
+[security]
+  [security.funcs]
+    getenv = ['^HUGO_', '^CI$', '^GITHUB_TOKEN$']
+
 [params]
   author = 'MIFE'
   username = 'mife'
