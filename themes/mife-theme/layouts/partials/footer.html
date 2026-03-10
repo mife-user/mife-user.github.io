@@ -94,7 +94,7 @@
     // 加载所有文章数据
     function loadPosts() {
         if (allPosts.length > 0) return;
-        
+
         {{ range where .Site.RegularPages "Section" "posts" }}
         allPosts.push({
             title: {{ .Title | jsonify }},
@@ -124,7 +124,7 @@
             searchResults.innerHTML = '<div class="search-no-results">未找到相关文章</div>';
         } else {
             searchResults.innerHTML = results.map(post => {
-                const tagsHtml = post.tags ? post.tags.map(tag => 
+                const tagsHtml = post.tags ? post.tags.map(tag =>
                     `<span class="search-result-tag">${tag}</span>`
                 ).join('') : '';
                 return `
@@ -137,6 +137,18 @@
                     </a>
                 `;
             }).join('');
+        }
+    });
+
+    // 支持回车键搜索（移动端）
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // 在移动端，回车键会触发第一个搜索结果的点击
+            const firstResult = searchResults.querySelector('.search-result-item');
+            if (firstResult) {
+                firstResult.click();
+            }
         }
     });
 
