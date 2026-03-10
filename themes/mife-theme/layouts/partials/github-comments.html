@@ -353,7 +353,6 @@
                 if (issue.title === `评论：${pageTitle}`) return true;
 
                 // 匹配方式 2: 标题包含页面 slug（用于兼容旧数据）
-                // 例如：Issue 标题 "TERMUX 从零搭建博客..." 匹配页面 "Termux 博客创建"
                 const slugMatch = issue.title.toLowerCase().includes(pageSlug.toLowerCase());
                 if (slugMatch) return true;
 
@@ -363,6 +362,14 @@
                 // 提取标题关键词（去掉 "评论：" 前缀）
                 const cleanTitle = titleLower.replace(/^评论：/, '').replace(/^comment:/, '');
                 if (cleanTitle.includes(pageTitleLower) || pageTitleLower.includes(cleanTitle)) return true;
+
+                // 匹配方式 4: 提取关键词匹配（兼容大小写和简写）
+                // 例如："TERMUX 从零搭建博客" 匹配 "Termux 从零搭建博客：npm + AI..."
+                const issueKeywords = cleanTitle.split(/[\s:：]+/).filter(w => w.length > 1);
+                const pageKeywords = pageTitleLower.split(/[\s:：]+/).filter(w => w.length > 1);
+                const matchCount = issueKeywords.filter(k => pageKeywords.some(pk => pk.includes(k) || k.includes(pk))).length;
+                // 如果有 3 个或以上关键词匹配，认为是同一篇文章
+                if (matchCount >= 3) return true;
 
                 return false;
             });
