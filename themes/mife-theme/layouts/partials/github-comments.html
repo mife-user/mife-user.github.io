@@ -308,6 +308,8 @@
     const label = '{{ $issueLabel }}';
     const pageTitle = '{{ .Title | htmlEscape }}';
     const pageUrl = '{{ .Permalink }}';
+    // 从页面 URL 提取 slug（文章标识）
+    const pageSlug = pageUrl.replace(/\/$/, '').split('/').pop();
 
     const commentsContainer = document.getElementById('comments-container');
     const commentsCount = document.getElementById('comments-count');
@@ -331,7 +333,7 @@
     // 获取评论
     async function fetchComments() {
         try {
-            // 先获取所有带 labels 的 issues
+            // 先获取所有 issues
             const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repo}/issues?state=all&per_page=100`);
 
             if (!response.ok) {
@@ -340,16 +342,29 @@
 
             const issues = await response.json();
 
-            // 过滤出当前页面的评论 - 通过标题精确匹配
+            // 过滤出当前页面的评论 - 多种匹配方式
             const pageIssues = issues.filter(issue => {
-                // 检查是否包含 "评论：" 前缀和页面标题
-                const isCommentIssue = issue.title && issue.title.startsWith('评论：');
-                // 精确匹配：Issue 标题必须等于 "评论：{文章标题}"
-                const titleMatch = issue.title === `评论：${pageTitle}`;
                 // 检查是否有评论标签
                 const labels = issue.labels || [];
                 const hasLabel = labels.some(l => l.name === label);
-                return isCommentIssue && titleMatch && hasLabel;
+                if (!hasLabel) return false;
+
+                // 匹配方式 1: 标题精确匹配 "评论：{标题}"
+                if (issue.title === `评论：${pageTitle}`) return true;
+
+                // 匹配方式 2: 标题包含页面 slug（用于兼容旧数据）
+                // 例如：Issue 标题 "TERMUX 从零搭建博客..." 匹配页面 "Termux 博客创建"
+                const slugMatch = issue.title.toLowerCase().includes(pageSlug.toLowerCase());
+                if (slugMatch) return true;
+
+                // 匹配方式 3: 标题包含页面标题的主要部分（忽略大小写）
+                const titleLower = issue.title.toLowerCase();
+                const pageTitleLower = pageTitle.toLowerCase();
+                // 提取标题关键词（去掉 "评论：" 前缀）
+                const cleanTitle = titleLower.replace(/^评论：/, '').replace(/^comment:/, '');
+                if (cleanTitle.includes(pageTitleLower) || pageTitleLower.includes(cleanTitle)) return true;
+
+                return false;
             });
 
             // 按创建时间排序（最新的在前）
