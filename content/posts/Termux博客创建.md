@@ -1,8 +1,8 @@
 ---
-title: Termux 从零搭建博客：npm + AI + Git + Hugo 完整操作记录/
+title: Termux 从零搭建博客：npm + AI + Git + Hugo 完整操作记录
 date: 2026-03-09T12:00:00+08:00
 draft: false
-tags: ［＂Termux＂,＂Hugo＂］
+tags: ["Termux", "Hugo", "GitHub Pages", "博客搭建"]
 ---
 
 ## 前言

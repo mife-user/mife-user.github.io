@@ -1,17 +1,49 @@
 {{ define "main" }}
 <section class="section" style="padding-top: 120px;">
     <h2 class="section-title">{{ .Title }}</h2>
-    <div class="post-list">
-        {{ range .Pages }}
-        <article class="post-card">
-            <div class="post-date">{{ .Date.Format "2006-01-02" }}</div>
-            <h3 class="post-title">
-                <a href="{{ .Permalink }}">{{ .Title }}</a>
-            </h3>
-            <p class="post-excerpt">{{ .Summary | truncate 150 }}</p>
-            <a href="{{ .Permalink }}" class="read-more" data-zh="阅读更多 →" data-en="Read More →">阅读更多 →</a>
-        </article>
+    <div class="all-tags">
+        {{ range .Site.Taxonomies.tags }}
+        <a href="{{ .Page.Permalink }}" class="tag-cloud-item">
+            {{ .Page.Title }} <span class="tag-count">{{ .Count }}</span>
+        </a>
         {{ end }}
     </div>
 </section>
+
+<style>
+.all-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.tag-cloud-item {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+    color: var(--bg-primary);
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tag-cloud-item:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+    background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+}
+
+.tag-count {
+    background: rgba(10, 10, 10, 0.3);
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+</style>
 {{ end }}

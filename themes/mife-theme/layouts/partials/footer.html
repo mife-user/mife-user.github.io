@@ -76,4 +76,91 @@
         musicBtn.classList.add('paused');
         musicBtn.classList.remove('playing');
     });
+
+    // 搜索功能
+    const searchOverlay = document.getElementById('search-overlay');
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    const allPosts = [];
+
+    function toggleSearch() {
+        searchOverlay.classList.toggle('active');
+        if (searchOverlay.classList.contains('active')) {
+            setTimeout(() => searchInput.focus(), 100);
+            loadPosts();
+        }
+    }
+
+    // 加载所有文章数据
+    function loadPosts() {
+        if (allPosts.length > 0) return;
+        
+        {{ range where .Site.RegularPages "Section" "posts" }}
+        allPosts.push({
+            title: {{ .Title | jsonify }},
+            date: {{ .Date.Format "2006-01-02" | jsonify }},
+            permalink: {{ .Permalink | jsonify }},
+            tags: {{ .Params.tags | jsonify }},
+            summary: {{ .Summary | truncate 100 | jsonify }}
+        });
+        {{ end }}
+    }
+
+    // 搜索功能
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim().toLowerCase();
+        if (query.length === 0) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        const results = allPosts.filter(post => {
+            const titleMatch = post.title.toLowerCase().includes(query);
+            const tagsMatch = post.tags && post.tags.some(tag => tag.toLowerCase().includes(query));
+            return titleMatch || tagsMatch;
+        });
+
+        if (results.length === 0) {
+            searchResults.innerHTML = '<div class="search-no-results">未找到相关文章</div>';
+        } else {
+            searchResults.innerHTML = results.map(post => {
+                const tagsHtml = post.tags ? post.tags.map(tag => 
+                    `<span class="search-result-tag">${tag}</span>`
+                ).join('') : '';
+                return `
+                    <a href="${post.permalink}" class="search-result-item">
+                        <div class="search-result-title">${highlightMatch(post.title, query)}</div>
+                        <div class="search-result-meta">
+                            <span class="search-result-date">${post.date}</span>
+                            ${tagsHtml}
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+    });
+
+    // 高亮匹配文本
+    function highlightMatch(text, query) {
+        const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+        return text.replace(regex, '<mark style="background: rgba(212, 175, 55, 0.3); color: var(--gold-light); padding: 0 2px; border-radius: 2px;">$1</mark>');
+    }
+
+    // 转义正则表达式特殊字符
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // 支持键盘快捷键
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + K 打开搜索
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            toggleSearch();
+        }
+        // ESC 关闭搜索
+        if (e.key === 'Escape' && searchOverlay.classList.contains('active')) {
+            toggleSearch();
+        }
+    });
 </script>
