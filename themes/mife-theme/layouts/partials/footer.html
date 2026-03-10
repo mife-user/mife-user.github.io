@@ -6,8 +6,26 @@
     </p>
 </footer>
 
+<!-- 音乐播放器 -->
+<div class="music-player">
+    <button class="music-btn paused" id="musicBtn" aria-label="播放音乐">
+        <div class="music-wave"></div>
+        <div class="music-wave"></div>
+        <div class="music-wave"></div>
+        <div class="music-icon"></div>
+    </button>
+</div>
+
+<!-- 音频元素 -->
+<audio id="bgMusic" loop>
+    <source src="/audio/削除 Nikki Simmons - Destr0yer.mp3" type="audio/mpeg">
+</audio>
+
 <script>
     let currentLang = 'zh';
+    let isPlaying = false;
+    const musicBtn = document.getElementById('musicBtn');
+    const bgMusic = document.getElementById('bgMusic');
 
     function toggleLanguage() {
         currentLang = currentLang === 'zh' ? 'en' : 'zh';
@@ -20,4 +38,42 @@
             el.textContent = currentLang === 'zh' ? el.getAttribute('data-zh') : el.getAttribute('data-en');
         });
     }
+
+    // 音乐播放控制
+    function toggleMusic() {
+        if (isPlaying) {
+            bgMusic.pause();
+            musicBtn.classList.add('paused');
+            musicBtn.classList.remove('playing');
+        } else {
+            bgMusic.play();
+            musicBtn.classList.remove('paused');
+            musicBtn.classList.add('playing');
+        }
+        isPlaying = !isPlaying;
+    }
+
+    musicBtn.addEventListener('click', toggleMusic);
+
+    // 页面加载完成后自动播放
+    window.addEventListener('load', function() {
+        // 尝试自动播放
+        bgMusic.play().then(() => {
+            isPlaying = true;
+            musicBtn.classList.remove('paused');
+            musicBtn.classList.add('playing');
+        }).catch(() => {
+            // 如果自动播放被阻止，保持暂停状态
+            isPlaying = false;
+            musicBtn.classList.add('paused');
+            musicBtn.classList.remove('playing');
+        });
+    });
+
+    // 音频播放结束时重置状态
+    bgMusic.addEventListener('ended', function() {
+        isPlaying = false;
+        musicBtn.classList.add('paused');
+        musicBtn.classList.remove('playing');
+    });
 </script>
