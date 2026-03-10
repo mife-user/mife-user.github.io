@@ -8,9 +8,13 @@ theme = 'mife-theme'
   username = 'mife'
   bio = '开发者 · 创作者 · 探索者'
   github = 'https://github.com/mife-user'
+  githubUsername = 'mife-user'
+  repo = 'my-blog'
   email = '15723556393@163.com'
   avatar = 'images/avatar.jpg'
   background = 'images/background.jpg'
+  enableComments = true
+  issueLabel = 'comments'
 
 [menu]
   [[menu.main]]

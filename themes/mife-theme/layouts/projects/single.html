@@ -1,14 +1,22 @@
 {{ define "main" }}
-<article class="single-article">
+<article class="single-article project-page">
     <header class="article-header">
+        <div class="project-type-badge" data-zh="项目" data-en="PROJECT">项目</div>
         <h1 class="article-title">{{ .Title }}</h1>
         <div class="post-date">{{ .Date.Format "2006-01-02" }}</div>
+        {{ with .Params.tags }}
+        <div class="project-tags">
+            {{ range . }}
+            <span class="tag">{{ . }}</span>
+            {{ end }}
+        </div>
+        {{ end }}
     </header>
     <div class="content">
         {{ .Content }}
     </div>
     <div class="article-footer">
-        <a href="/" class="btn" data-zh="← 返回首页" data-en="← Back to Home">← 返回首页</a>
+        <a href="/#projects" class="btn" data-zh="← 返回项目列表" data-en="← Back to Projects">← 返回项目列表</a>
     </div>
     
     {{ if .Site.Params.enableComments }}
@@ -23,6 +31,19 @@
         padding: 2rem;
     }
 
+    .project-type-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+        color: var(--bg-primary);
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+    }
+
     .article-header {
         margin-bottom: 3rem;
     }
@@ -34,6 +55,30 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
         margin-bottom: 1rem;
+    }
+
+    .project-tags {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .tag {
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+        color: var(--bg-primary);
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
     }
 
     .content {
