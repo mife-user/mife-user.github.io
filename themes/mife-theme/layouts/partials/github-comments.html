@@ -382,9 +382,22 @@
 
         } catch (error) {
             console.error('获取评论失败:', error);
+            let errorMsg = '加载评论失败，请稍后再试';
+            let detailMsg = '';
+            
+            // 检查是否是速率限制问题
+            if (error.message.includes('403')) {
+                detailMsg = 'GitHub API 访问受限，请稍后再试（未认证用户每小时限 60 次）';
+            } else if (error.message.includes('404')) {
+                detailMsg = '找不到仓库或 Issue，请检查配置';
+            } else {
+                detailMsg = error.message;
+            }
+            
             commentsContainer.innerHTML = `
                 <div class="error-message">
-                    <p data-zh="加载评论失败，请稍后再试" data-en="Failed to load comments, please try again later">加载评论失败，请稍后再试</p>
+                    <p>${errorMsg}</p>
+                    <p style="font-size:0.85rem;margin-top:0.5rem;opacity:0.8">${detailMsg}</p>
                 </div>
             `;
         }
