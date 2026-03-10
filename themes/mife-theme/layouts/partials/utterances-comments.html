@@ -1,14 +1,13 @@
 {{- $githubUsername := .Site.Params.githubUsername | default "mife-user" -}}
 {{- $repo := .Site.Params.repo | default "mife-user.github.io" -}}
 {{- $issueLabel := .Site.Params.issueLabel | default "comments" -}}
-{{- $utterancesTheme := .Site.Params.utterancesTheme | default "github-light" -}}
 
 <div class="comments-section" id="comments">
     <div class="comments-header">
         <h3 class="comments-title" data-zh="评论" data-en="Comments">评论</h3>
     </div>
 
-    <div class="comments-container" id="comments-container">
+    <div class="utterances-container" id="utterances-container">
         <div class="loading-spinner">
             <div class="spinner"></div>
             <p data-zh="加载评论中..." data-en="Loading comments...">加载评论中...</p>
@@ -36,14 +35,19 @@
         font-weight: 600;
     }
 
-    .comments-container {
+    .utterances-container {
         min-height: 200px;
+        position: relative;
     }
 
     .loading-spinner {
         text-align: center;
         padding: 3rem 0;
         color: var(--text-secondary);
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
     }
 
     .spinner {
@@ -60,11 +64,17 @@
         to { transform: rotate(360deg); }
     }
 
-    /* Utterances iframe 样式调整 */
-    .comments-container iframe {
+    /* Utterances iframe 样式 */
+    .utterances-container iframe {
         width: 100% !important;
         border: none;
         overflow: hidden;
+        display: block;
+    }
+
+    /* 隐藏加载器当 iframe 加载完成后 */
+    .utterances-container iframe + .loading-spinner {
+        display: none;
     }
 </style>
 
@@ -75,11 +85,11 @@
     const label = '{{ $issueLabel }}';
     const pageTitle = '{{ .Title | htmlEscape }}';
     const pageUrl = '{{ .Permalink }}';
-    const utterancesTheme = '{{ $utterancesTheme }}';
 
-    const commentsContainer = document.getElementById('comments-container');
+    const utterancesContainer = document.getElementById('utterances-container');
+    const spinner = utterancesContainer.querySelector('.loading-spinner');
 
-    // 创建 Utterances script
+    // 创建 Utterances script - 使用 github-dark 作为基础主题
     const script = document.createElement('script');
     script.src = 'https://utteranc.es/client.js';
     script.async = true;
@@ -87,26 +97,24 @@
     script.setAttribute('repo', `${githubUsername}/${repo}`);
     script.setAttribute('issue-term', 'title');
     script.setAttribute('label', label);
-    script.setAttribute('theme', utterancesTheme);
+    script.setAttribute('theme', 'github-dark');
 
     // 监听 Utterances 加载完成
     script.onload = function() {
-        const spinner = commentsContainer.querySelector('.loading-spinner');
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
+        // iframe 加载完成后隐藏 spinner
+        setTimeout(function() {
+            if (spinner) spinner.style.display = 'none';
+        }, 500);
     };
 
     // 监听 Utterances 消息
     window.addEventListener('message', function(event) {
         if (event.origin !== 'https://utteranc.es') return;
-        
-        const spinner = commentsContainer.querySelector('.loading-spinner');
         if (spinner && event.data.type === 'utterances-loaded') {
             spinner.style.display = 'none';
         }
     });
 
-    commentsContainer.appendChild(script);
+    utterancesContainer.appendChild(script);
 })();
 </script>

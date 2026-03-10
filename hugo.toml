@@ -19,7 +19,6 @@ theme = 'mife-theme'
   background = 'images/background.jpg'
   enableComments = true
   issueLabel = 'comments'
-  utterancesTheme = 'github-light'
 
 [menu]
   [[menu.main]]
