@@ -18,9 +18,9 @@
     <div class="article-footer">
         <a href="/#projects" class="btn" data-zh="← 返回项目列表" data-en="← Back to Projects">← 返回项目列表</a>
     </div>
-    
+
     {{ if .Site.Params.enableComments }}
-        {{ partial "github-comments.html" . }}
+        {{ partial "utterances-comments.html" . }}
     {{ end }}
 </article>
 

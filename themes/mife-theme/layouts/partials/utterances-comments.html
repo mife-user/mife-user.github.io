@@ -1,0 +1,112 @@
+{{- $githubUsername := .Site.Params.githubUsername | default "mife-user" -}}
+{{- $repo := .Site.Params.repo | default "mife-user.github.io" -}}
+{{- $issueLabel := .Site.Params.issueLabel | default "comments" -}}
+{{- $utterancesTheme := .Site.Params.utterancesTheme | default "github-light" -}}
+
+<div class="comments-section" id="comments">
+    <div class="comments-header">
+        <h3 class="comments-title" data-zh="评论" data-en="Comments">评论</h3>
+    </div>
+
+    <div class="comments-container" id="comments-container">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p data-zh="加载评论中..." data-en="Loading comments...">加载评论中...</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .comments-section {
+        margin-top: 4rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .comments-header {
+        margin-bottom: 2rem;
+    }
+
+    .comments-title {
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+    }
+
+    .comments-container {
+        min-height: 200px;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 3rem 0;
+        color: var(--text-secondary);
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border-color);
+        border-top-color: var(--gold-primary);
+        border-radius: 50%;
+        margin: 0 auto 1rem;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Utterances iframe 样式调整 */
+    .comments-container iframe {
+        width: 100% !important;
+        border: none;
+        overflow: hidden;
+    }
+</style>
+
+<script>
+(function() {
+    const githubUsername = '{{ $githubUsername }}';
+    const repo = '{{ $repo }}';
+    const label = '{{ $issueLabel }}';
+    const pageTitle = '{{ .Title | htmlEscape }}';
+    const pageUrl = '{{ .Permalink }}';
+    const utterancesTheme = '{{ $utterancesTheme }}';
+
+    const commentsContainer = document.getElementById('comments-container');
+
+    // 创建 Utterances script
+    const script = document.createElement('script');
+    script.src = 'https://utteranc.es/client.js';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.setAttribute('repo', `${githubUsername}/${repo}`);
+    script.setAttribute('issue-term', 'title');
+    script.setAttribute('label', label);
+    script.setAttribute('theme', utterancesTheme);
+
+    // 监听 Utterances 加载完成
+    script.onload = function() {
+        const spinner = commentsContainer.querySelector('.loading-spinner');
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+    };
+
+    // 监听 Utterances 消息
+    window.addEventListener('message', function(event) {
+        if (event.origin !== 'https://utteranc.es') return;
+        
+        const spinner = commentsContainer.querySelector('.loading-spinner');
+        if (spinner && event.data.type === 'utterances-loaded') {
+            spinner.style.display = 'none';
+        }
+    });
+
+    commentsContainer.appendChild(script);
+})();
+</script>

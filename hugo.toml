@@ -5,7 +5,7 @@ theme = 'mife-theme'
 
 [security]
   [security.funcs]
-    getenv = ['^HUGO_', '^CI$', '^GITHUB_TOKEN$']
+    getenv = ['^HUGO_', '^CI$']
 
 [params]
   author = 'MIFE'
@@ -19,6 +19,7 @@ theme = 'mife-theme'
   background = 'images/background.jpg'
   enableComments = true
   issueLabel = 'comments'
+  utterancesTheme = 'github-light'
 
 [menu]
   [[menu.main]]

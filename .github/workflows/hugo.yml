@@ -51,7 +51,6 @@ jobs:
         env:
           HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
           HUGO_ENVIRONMENT: production
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           hugo \
             --gc \
