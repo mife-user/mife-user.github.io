@@ -339,11 +339,12 @@
 
             const issues = await response.json();
 
-            // 过滤出当前页面的评论 - 通过标题匹配
+            // 过滤出当前页面的评论 - 通过标题精确匹配
             const pageIssues = issues.filter(issue => {
                 // 检查是否包含 "评论：" 前缀和页面标题
                 const isCommentIssue = issue.title && issue.title.startsWith('评论：');
-                const titleMatch = issue.title && issue.title.includes(pageTitle);
+                // 精确匹配：Issue 标题必须等于 "评论：{文章标题}"
+                const titleMatch = issue.title === `评论：${pageTitle}`;
                 // 检查是否有评论标签
                 const labels = issue.labels || [];
                 const hasLabel = labels.some(l => l.name === label);
