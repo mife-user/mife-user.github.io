@@ -323,7 +323,8 @@
     // 写入评论按钮
     writeCommentBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        const newIssueUrl = `https://github.com/${githubUsername}/${repo}/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent('请在此处输入您的评论...')}&labels=${encodeURIComponent(label)}`;
+        // 构建 Issue URL，自动带上 labels 参数
+        const newIssueUrl = `https://github.com/${githubUsername}/${repo}/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent('请在此处输入您的评论...\n\n---\n请确保 Issue 已添加 comments 标签，否则评论无法显示。')}&labels=${encodeURIComponent(label)}`;
         window.open(newIssueUrl, '_blank');
     });
 
