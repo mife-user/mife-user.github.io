@@ -387,17 +387,20 @@
             
             // 检查是否是速率限制问题
             if (error.message.includes('403')) {
-                detailMsg = 'GitHub API 访问受限，请稍后再试（未认证用户每小时限 60 次）';
+                detailMsg = 'GitHub API 访问受限（403），请稍后再试（未认证用户每小时限 60 次）';
             } else if (error.message.includes('404')) {
-                detailMsg = '找不到仓库或 Issue，请检查配置';
+                detailMsg = '找不到仓库或 Issue（404），请检查配置';
+            } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                detailMsg = '网络错误，请检查网络连接';
             } else {
-                detailMsg = error.message;
+                detailMsg = '错误：' + error.message;
             }
             
             commentsContainer.innerHTML = `
                 <div class="error-message">
-                    <p>${errorMsg}</p>
-                    <p style="font-size:0.85rem;margin-top:0.5rem;opacity:0.8">${detailMsg}</p>
+                    <p><strong>${errorMsg}</strong></p>
+                    <p style="font-size:0.8rem;margin-top:0.8rem;opacity:0.9;color:#fca5a5">${detailMsg}</p>
+                    <p style="font-size:0.75rem;margin-top:0.5rem;opacity:0.6">详细：${error.toString()}</p>
                 </div>
             `;
         }
