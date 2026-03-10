@@ -308,19 +308,17 @@
     const label = '{{ $issueLabel }}';
     const pageTitle = '{{ .Title | htmlEscape }}';
     const pageUrl = '{{ .Permalink }}';
-    const pageId = '{{ .File.UniqueID }}';
 
     const commentsContainer = document.getElementById('comments-container');
     const commentsCount = document.getElementById('comments-count');
     const writeCommentBtn = document.getElementById('write-comment-btn');
     const githubLink = document.getElementById('github-link');
 
-    // 生成 Issue 标题和标签
+    // 生成 Issue 标题
     const issueTitle = `评论：${pageTitle}`;
-    const issueLabelFull = `page:${pageId},label:${label}`;
 
-    // 更新 GitHub 链接
-    githubLink.href = `https://github.com/${githubUsername}/${repo}/issues?q=${encodeURIComponent(issueLabelFull)}`;
+    // 更新 GitHub 链接 - 使用标题搜索
+    githubLink.href = `https://github.com/${githubUsername}/${repo}/issues?q=${encodeURIComponent('评论：' + pageTitle)}`;
 
     // 写入评论按钮
     writeCommentBtn.addEventListener('click', function(e) {
@@ -332,20 +330,24 @@
     // 获取评论
     async function fetchComments() {
         try {
-            const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repo}/issues?labels=${encodeURIComponent(label)}&state=all&per_page=100`);
-            
+            // 先获取所有带 labels 的 issues
+            const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repo}/issues?state=all&per_page=100`);
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const issues = await response.json();
-            
-            // 过滤出当前页面的评论
+
+            // 过滤出当前页面的评论 - 通过标题匹配
             const pageIssues = issues.filter(issue => {
+                // 检查是否包含 "评论：" 前缀和页面标题
+                const isCommentIssue = issue.title && issue.title.startsWith('评论：');
+                const titleMatch = issue.title && issue.title.includes(pageTitle);
+                // 检查是否有评论标签
                 const labels = issue.labels || [];
                 const hasLabel = labels.some(l => l.name === label);
-                const titleMatch = issue.title && issue.title.includes(pageTitle);
-                return hasLabel && titleMatch;
+                return isCommentIssue && titleMatch && hasLabel;
             });
 
             // 按创建时间排序（最新的在前）
