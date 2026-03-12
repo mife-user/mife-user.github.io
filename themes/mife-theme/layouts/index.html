@@ -38,22 +38,23 @@
 <!-- 项目展示 -->
 <section id="projects" class="section">
     <h2 class="section-title" data-zh="项目" data-en="PROJECTS">📦 项目</h2>
-    <div class="project-grid">
-        {{ range where .Site.RegularPages "Section" "projects" | first 6 }}
-        <div class="project-card">
+    <div class="project-list">
+        {{ range where .Site.RegularPages "Section" "projects" | first 10 }}
+        <article class="project-card">
             <div class="project-meta">
-                <h3 class="project-title">{{ .Title }}</h3>
+                <div class="project-date">{{ .Date.Format "2006-01-02" }}</div>
                 {{ with .Params.tags }}
                 <div class="project-tags">
                     {{ range . }}
-                    <span class="tag">{{ . }}</span>
+                    <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}/" class="tag-link">{{ . }}</a>
                     {{ end }}
                 </div>
                 {{ end }}
             </div>
-            <p class="project-desc">{{ .Summary | truncate 100 }}</p>
-            <a href="{{ .Permalink }}" class="project-link">阅读更多 →</a>
-        </div>
+            <h3 class="project-title">
+                <a href="{{ .Permalink }}">{{ .Title }}</a>
+            </h3>
+        </article>
         {{ end }}
     </div>
 </section>

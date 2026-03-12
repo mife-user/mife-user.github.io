@@ -144,17 +144,6 @@ img {
         font-size: 0.85rem;
     }
 
-    /* 语言切换按钮位置优化 */
-    .lang-switch {
-        top: 60px;
-        right: 10px;
-    }
-
-    .lang-btn {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.8rem;
-    }
-
     /* 单页文章优化 */
     article {
         padding: 1rem !important;
@@ -292,7 +281,6 @@ img {
 @media print {
     header,
     footer,
-    .lang-switch,
     .social-links {
         display: none;
     }

@@ -127,6 +127,32 @@
         width: 100%;
     }
 
+    /* 导航栏语言切换按钮 */
+    .lang-nav-item {
+        display: flex;
+        align-items: center;
+    }
+
+    .nav-links .lang-btn {
+        padding: 0.4rem 0.9rem;
+        font-size: 0.85rem;
+        background: rgba(26, 26, 26, 0.9);
+        border: 1px solid var(--gold-dark);
+        border-radius: 20px;
+        color: var(--gold-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+        font-family: inherit;
+    }
+
+    .nav-links .lang-btn:hover {
+        background: var(--gold-primary);
+        color: var(--bg-primary);
+        transform: scale(1.05);
+        box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+    }
+
     /* 主容器 */
     main {
         max-width: 1000px;
@@ -522,33 +548,6 @@
         color: var(--gold-primary);
     }
 
-    /* 语言切换分样式 */
-    .lang-switch {
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        z-index: 999;
-    }
-
-    .lang-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
-        background: rgba(26, 26, 26, 0.9);
-        border: 1px solid var(--gold-dark);
-        border-radius: 20px;
-        color: var(--gold-primary);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-    }
-
-    .lang-btn:hover {
-        background: var(--gold-primary);
-        color: var(--bg-primary);
-        transform: scale(1.05);
-        box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
-    }
-
     /* 响应式基础优化 */
     img {
         max-width: 100%;
@@ -604,6 +603,15 @@
         .search-btn .search-icon {
             width: 20px;
             height: 20px;
+        }
+
+        .lang-nav-item {
+            display: inline-block;
+        }
+
+        .nav-links .lang-btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
         }
 
         .logo {
@@ -742,6 +750,11 @@
 
         .nav-links a {
             font-size: 0.85rem;
+        }
+
+        .nav-links .lang-btn {
+            padding: 0.35rem 0.7rem;
+            font-size: 0.8rem;
         }
 
         .hero {
