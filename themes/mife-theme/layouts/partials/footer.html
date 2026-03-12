@@ -181,11 +181,11 @@
 
         {{ range where .Site.RegularPages "Section" "posts" }}
         allPosts.push({
-            title: {{ .Title | jsonify }},
-            date: {{ .Date.Format "2006-01-02" | jsonify }},
-            permalink: {{ .Permalink | jsonify }},
-            tags: {{ .Params.tags | jsonify }},
-            summary: {{ .Summary | truncate 100 | jsonify }}
+            title: {{ .Title | jsonify | safeJS }},
+            date: {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
+            permalink: {{ .Permalink | jsonify | safeJS }},
+            tags: {{ if .Params.tags }}{{ delimit .Params.tags "\", \"" | printf "[\"%s\"]" | safeJS }}{{ else }}[]{{ end }},
+            summary: {{ .Summary | truncate 100 | jsonify | safeJS }}
         });
         {{ end }}
     }
