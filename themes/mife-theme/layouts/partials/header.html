@@ -6,13 +6,15 @@
             {{ range .Site.Menus.main }}
             <li><a href="{{ .URL }}" data-zh="{{ .Name }}" data-en="{{ i18n .Name | default .Name }}">{{ .Name }}</a></li>
             {{ end }}
+            <li class="search-nav-item">
+                <button class="search-btn" id="search-btn" title="搜索" data-zh="搜索" data-en="Search">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+            </li>
         </ul>
-        <button class="search-btn" id="search-btn" title="搜索" data-zh="搜索" data-en="Search">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-            </svg>
-        </button>
     </nav>
 </header>
 
@@ -25,6 +27,11 @@
                 <path d="m21 21-4.35-4.35"></path>
             </svg>
             <input type="text" id="search-input" class="search-input" placeholder="搜索文章或标签..." data-zh-placeholder="搜索文章或标签..." data-enplaceholder="Search articles or tags...">
+            <button class="search-confirm" id="search-confirm" title="确认搜索" data-zh="确认" data-en="Go">
+                <svg class="search-confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </button>
             <button class="search-close" id="search-close">✕</button>
         </div>
         <div class="search-results" id="search-results"></div>

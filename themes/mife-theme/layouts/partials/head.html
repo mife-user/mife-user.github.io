@@ -168,7 +168,7 @@
         cursor: pointer;
         animation: avatarGlow 3s ease-in-out infinite;
         position: relative;
-        z-index: 1;
+        z-index: 1100;
     }
 
     @keyframes avatarGlow {
@@ -568,6 +568,20 @@
             font-size: 0.9rem;
         }
 
+        .search-nav-item {
+            display: inline-block;
+        }
+
+        .search-btn {
+            margin-left: 0.5rem;
+            padding: 0.3rem;
+        }
+
+        .search-btn .search-icon {
+            width: 20px;
+            height: 20px;
+        }
+
         .logo {
             font-size: 1.4rem;
         }
@@ -706,16 +720,6 @@
             font-size: 0.85rem;
         }
 
-        .search-btn {
-            margin-left: 0.5rem;
-            padding: 0.3rem;
-        }
-
-        .search-btn .search-icon {
-            width: 20px;
-            height: 20px;
-        }
-
         .hero {
             padding: 2rem 0;
         }
@@ -731,6 +735,7 @@
         .avatar {
             width: 100px;
             height: 100px;
+            z-index: 1100;
         }
 
         .social-links {
@@ -1066,6 +1071,36 @@
         background: rgba(212, 175, 55, 0.1);
     }
 
+    .search-confirm {
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+        border: none;
+        color: var(--bg-primary);
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        margin-left: 0.5rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+    }
+
+    .search-confirm:hover {
+        background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+    }
+
+    .search-confirm:active {
+        transform: scale(0.95);
+    }
+
+    .search-confirm-icon {
+        width: 20px;
+        height: 20px;
+    }
+
     .search-results {
         max-height: 400px;
         overflow-y: auto;
@@ -1139,6 +1174,25 @@
 
         .search-input {
             font-size: 1rem;
+        }
+
+        .search-header {
+            padding: 1rem;
+        }
+
+        .search-confirm {
+            padding: 0.4rem 0.8rem;
+            margin-left: 0.3rem;
+        }
+
+        .search-confirm-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .search-close {
+            font-size: 1.3rem;
+            padding: 0.2rem 0.4rem;
         }
     }
 </style>

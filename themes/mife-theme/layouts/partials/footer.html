@@ -83,6 +83,7 @@
     const searchResults = document.getElementById('search-results');
     const searchBtn = document.getElementById('search-btn');
     const searchClose = document.getElementById('search-close');
+    const searchConfirm = document.getElementById('search-confirm');
     const allPosts = [];
 
     function toggleSearch() {
@@ -93,12 +94,56 @@
         }
     }
 
+    // 执行搜索
+    function doSearch() {
+        const query = searchInput.value.trim().toLowerCase();
+        if (query.length === 0) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        const results = allPosts.filter(post => {
+            const titleMatch = post.title.toLowerCase().includes(query);
+            const tagsMatch = post.tags && post.tags.some(tag => tag.toLowerCase().includes(query));
+            const summaryMatch = post.summary && post.summary.toLowerCase().includes(query);
+            return titleMatch || tagsMatch || summaryMatch;
+        });
+
+        if (results.length === 0) {
+            searchResults.innerHTML = '<div class="search-no-results">未找到相关文章</div>';
+        } else {
+            searchResults.innerHTML = results.map(post => {
+                const tagsHtml = post.tags ? post.tags.map(tag =>
+                    `<span class="search-result-tag">${tag}</span>`
+                ).join('') : '';
+                return `
+                    <a href="${post.permalink}" class="search-result-item">
+                        <div class="search-result-title">${highlightMatch(post.title, query)}</div>
+                        <div class="search-result-meta">
+                            <span class="search-result-date">${post.date}</span>
+                            ${tagsHtml}
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+    }
+
     // 绑定搜索按钮点击事件
     if (searchBtn) {
         searchBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             toggleSearch();
+        });
+    }
+
+    // 绑定确认搜索按钮点击事件
+    if (searchConfirm) {
+        searchConfirm.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            doSearch();
         });
     }
 
@@ -122,6 +167,14 @@
         });
     }
 
+    // 支持回车键搜索
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            doSearch();
+        }
+    });
+
     // 加载所有文章数据
     function loadPosts() {
         if (allPosts.length > 0) return;
@@ -136,52 +189,6 @@
         });
         {{ end }}
     }
-
-    // 搜索功能
-    searchInput.addEventListener('input', function(e) {
-        const query = e.target.value.trim().toLowerCase();
-        if (query.length === 0) {
-            searchResults.innerHTML = '';
-            return;
-        }
-
-        const results = allPosts.filter(post => {
-            const titleMatch = post.title.toLowerCase().includes(query);
-            const tagsMatch = post.tags && post.tags.some(tag => tag.toLowerCase().includes(query));
-            return titleMatch || tagsMatch;
-        });
-
-        if (results.length === 0) {
-            searchResults.innerHTML = '<div class="search-no-results">未找到相关文章</div>';
-        } else {
-            searchResults.innerHTML = results.map(post => {
-                const tagsHtml = post.tags ? post.tags.map(tag =>
-                    `<span class="search-result-tag">${tag}</span>`
-                ).join('') : '';
-                return `
-                    <a href="${post.permalink}" class="search-result-item">
-                        <div class="search-result-title">${highlightMatch(post.title, query)}</div>
-                        <div class="search-result-meta">
-                            <span class="search-result-date">${post.date}</span>
-                            ${tagsHtml}
-                        </div>
-                    </a>
-                `;
-            }).join('');
-        }
-    });
-
-    // 支持回车键搜索（移动端）
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            // 在移动端，回车键会触发第一个搜索结果的点击
-            const firstResult = searchResults.querySelector('.search-result-item');
-            if (firstResult) {
-                firstResult.click();
-            }
-        }
-    });
 
     // 高亮匹配文本
     function highlightMatch(text, query) {
