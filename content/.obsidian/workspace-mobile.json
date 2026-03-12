@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "projects/cloude_drive.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": true,
                 "backlinks": false
               },
@@ -171,8 +171,9 @@
   },
   "active": "735912dd5b599fe2",
   "lastOpenFiles": [
-    "posts/Termux博客创建.md",
+    "15723556393@163.com.md",
     "projects/cloude_drive.md",
+    "posts/Termux博客创建.md",
     "未命名"
   ]
 }
