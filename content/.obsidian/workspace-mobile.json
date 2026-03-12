@@ -13,13 +13,13 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "posts/Termux博客创建.md",
+                "file": "projects/cloude_drive.md",
                 "mode": "source",
                 "source": true,
                 "backlinks": false
               },
               "icon": "lucide-file",
-              "title": "Termux博客创建"
+              "title": "cloude_drive"
             }
           }
         ]
@@ -50,7 +50,7 @@
         "state": {
           "type": "search",
           "state": {
-            "query": "tag:#常见问题",
+            "query": "",
             "matchingCase": false,
             "explainSearch": false,
             "collapseAll": false,
@@ -101,7 +101,7 @@
         }
       }
     ],
-    "currentTab": 1
+    "currentTab": 0
   },
   "right": {
     "id": "3703804c0a3d5a1c",
@@ -171,8 +171,8 @@
   },
   "active": "735912dd5b599fe2",
   "lastOpenFiles": [
-    "projects/demo.md",
     "posts/Termux博客创建.md",
+    "projects/cloude_drive.md",
     "未命名"
   ]
 }

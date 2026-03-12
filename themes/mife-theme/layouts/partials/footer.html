@@ -81,6 +81,8 @@
     const searchOverlay = document.getElementById('search-overlay');
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
+    const searchBtn = document.getElementById('search-btn');
+    const searchClose = document.getElementById('search-close');
     const allPosts = [];
 
     function toggleSearch() {
@@ -89,6 +91,35 @@
             setTimeout(() => searchInput.focus(), 100);
             loadPosts();
         }
+    }
+
+    // 绑定搜索按钮点击事件
+    if (searchBtn) {
+        searchBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSearch();
+        });
+    }
+
+    // 绑定关闭按钮点击事件
+    if (searchClose) {
+        searchClose.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (searchOverlay.classList.contains('active')) {
+                searchOverlay.classList.remove('active');
+            }
+        });
+    }
+
+    // 点击 overlay 背景关闭搜索
+    if (searchOverlay) {
+        searchOverlay.addEventListener('click', function(e) {
+            if (e.target === searchOverlay && searchOverlay.classList.contains('active')) {
+                searchOverlay.classList.remove('active');
+            }
+        });
     }
 
     // 加载所有文章数据
@@ -168,11 +199,13 @@
         // Ctrl/Cmd + K 打开搜索
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
-            toggleSearch();
+            if (!searchOverlay.classList.contains('active')) {
+                toggleSearch();
+            }
         }
         // ESC 关闭搜索
         if (e.key === 'Escape' && searchOverlay.classList.contains('active')) {
-            toggleSearch();
+            searchOverlay.classList.remove('active');
         }
     });
 </script>
