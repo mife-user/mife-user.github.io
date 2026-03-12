@@ -1,7 +1,7 @@
 {{ define "main" }}
 <article class="single-article project-page">
     <header class="article-header">
-        <div class="project-type-badge" data-zh="项目" data-en="PROJECT">项目</div>
+        <div class="project-type-badge" data-zh="项目" data-en="PROJECT">📦 项目</div>
         <h1 class="article-title">{{ .Title }}</h1>
         <div class="post-date">{{ .Date.Format "2006-01-02" }}</div>
         {{ with .Params.tags }}
@@ -35,50 +35,62 @@
         display: inline-block;
         background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
         color: var(--bg-primary);
-        padding: 0.3rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        padding: 0.5rem 1.2rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
         font-weight: 600;
-        letter-spacing: 1px;
-        margin-bottom: 1rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 1.5rem;
         text-transform: uppercase;
+        box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
     }
 
     .article-header {
         margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
     }
 
     .article-title {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
+        font-weight: 700;
         background: linear-gradient(135deg, var(--gold-light), var(--gold-primary));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        margin-bottom: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+
+    .post-date {
+        color: var(--text-muted);
+        font-size: 0.9rem;
         margin-bottom: 1rem;
     }
 
     .project-tags {
         display: flex;
-        gap: 0.6rem;
+        gap: 0.5rem;
         flex-wrap: wrap;
         margin-top: 1rem;
     }
 
     .tag {
-        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
-        color: var(--bg-primary);
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
+        background: var(--bg-card);
+        color: var(--gold-primary);
+        padding: 0.35rem 0.9rem;
+        border-radius: 6px;
         font-size: 0.85rem;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
+        font-weight: 500;
+        border: 1px solid rgba(212, 175, 55, 0.3);
         transition: all 0.3s ease;
     }
 
     .tag:hover {
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+        color: var(--bg-primary);
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
     }
 
     .content {
@@ -86,10 +98,61 @@
         color: var(--text-secondary);
     }
 
+    .content h1,
+    .content h2,
+    .content h3 {
+        color: var(--gold-primary);
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .content h1 {
+        font-size: 1.8rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+    }
+
+    .content h2 {
+        font-size: 1.5rem;
+    }
+
+    .content h3 {
+        font-size: 1.2rem;
+    }
+
+    .content a {
+        color: var(--gold-light);
+        text-decoration: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .content a:hover {
+        opacity: 0.8;
+        text-decoration: underline;
+    }
+
     .article-footer {
         margin-top: 3rem;
         padding-top: 2rem;
         border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+        display: inline-block;
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        padding: 0.6rem 1.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+        background: var(--gold-primary);
+        color: var(--bg-primary);
+        border-color: var(--gold-primary);
     }
 
     @media (max-width: 768px) {

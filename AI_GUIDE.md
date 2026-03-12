@@ -25,7 +25,9 @@ my-blog/
 ├── .github/workflows/
 │   └── hugo.yml              # GitHub Actions 部署配置
 ├── archetypes/
-│   └── default.md            # 文章模板
+│   ├── default.md            # 默认模板（JSON 数组格式）
+│   ├── posts.md              # 文章专用模板
+│   └── projects.md           # 项目专用模板
 ├── content/
 │   ├── posts/                # 博客文章 (.md)
 │   └── projects/             # 项目展示 (.md)
@@ -126,9 +128,7 @@ theme = 'mife-theme'
 title: '文章标题'
 date: 2026-03-09T12:00:00+08:00  # ISO 8601 格式
 draft: false                      # true=草稿，false=发布
-tags:
-  - 标签 1
-  - 标签 2
+tags: ["标签 1", "标签 2"]
 ---
 ```
 
@@ -139,17 +139,15 @@ tags:
 title: '项目名称'
 date: 2026-03-11T09:43:00+08:00
 draft: false
-tags:
-  - "Go"
-  - "Gin"
-  - "网盘"
+tags: ["Go", "Gin", "网盘"]
 ---
 ```
 
 ### 注意事项
-1. **标签格式**：使用数组格式，标签名可用引号包裹（特别是中文标签）
+1. **标签格式**：统一使用 JSON 数组格式 `tags: ["标签 1", "标签 2"]`（文章和项目都必须使用此格式）
 2. **草稿状态**：`draft: true` 的文章在正式构建时不会显示
 3. **文件命名**：支持中文文件名，但 URL 会被编码
+4. **模板文件**：使用 `hugo new content posts/标题.md` 或 `hugo new content projects/标题.md` 创建时，会自动使用 `archetypes/` 目录下的模板，已统一为 JSON 数组格式
 
 ---
 
@@ -211,7 +209,19 @@ function loadPosts() {
         date: {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
         permalink: {{ .Permalink | jsonify | safeJS }},
         tags: {{ if .Params.tags }}{{ delimit .Params.tags "\", \"" | printf "[\"%s\"]" | safeJS }}{{ else }}[]{{ end }},
-        summary: {{ .Summary | truncate 100 | jsonify | safeJS }}
+        summary: {{ .Summary | truncate 100 | jsonify | safeJS }},
+        section: "posts"
+    });
+    {{ end }}
+
+    {{ range where .Site.RegularPages "Section" "projects" }}
+    allPosts.push({
+        title: {{ .Title | jsonify | safeJS }},
+        date: {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
+        permalink: {{ .Permalink | jsonify | safeJS }},
+        tags: {{ if .Params.tags }}{{ delimit .Params.tags "\", \"" | printf "[\"%s\"]" | safeJS }}{{ else }}[]{{ end }},
+        summary: {{ .Summary | truncate 100 | jsonify | safeJS }},
+        section: "projects"
     });
     {{ end }}
 }
@@ -220,7 +230,7 @@ function loadPosts() {
 **⚠️ 注意事项**:
 - `tags` 字段必须使用 `delimit + printf + safeJS` 组合生成 JavaScript 数组
 - 其他字段使用 `jsonify | safeJS` 避免双重引号问题
-- 搜索支持：标题、标签、摘要（不区分大小写）
+- 搜索支持：标题、标签、摘要（不区分大小写），**支持文章和项目搜索**
 
 ### 2. 多语言支持
 **实现方式**: 使用 `data-zh` 和 `data-en` 属性
@@ -257,6 +267,55 @@ issueLabel = 'comments'
 ---
 
 ## 🚨 已知问题与修复记录
+
+### 2026-03-12: 项目搜索功能修复
+**问题**: 搜索功能只能搜索文章，无法搜索项目
+
+**原因**: `loadPosts()` 函数只加载了 `posts` 目录的内容
+
+**修复**:
+```html
+<!-- 修复后：同时加载文章和项目 -->
+{{ range where .Site.RegularPages "Section" "posts" }}
+allPosts.push({
+    title: {{ .Title | jsonify | safeJS }},
+    date: {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
+    permalink: {{ .Permalink | jsonify | safeJS }},
+    tags: {{ if .Params.tags }}{{ delimit .Params.tags "\", \"" | printf "[\"%s\"]" | safeJS }}{{ else }}[]{{ end }},
+    summary: {{ .Summary | truncate 100 | jsonify | safeJS }},
+    section: "posts"
+});
+{{ end }}
+
+{{ range where .Site.RegularPages "Section" "projects" }}
+allPosts.push({
+    title: {{ .Title | jsonify | safeJS }},
+    date: {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
+    permalink: {{ .Permalink | jsonify | safeJS }},
+    tags: {{ if .Params.tags }}{{ delimit .Params.tags "\", \"" | printf "[\"%s\"]" | safeJS }}{{ else }}[]{{ end }},
+    summary: {{ .Summary | truncate 100 | jsonify | safeJS }},
+    section: "projects"
+});
+{{ end }}
+```
+
+### 2026-03-12: 统一 Tags 格式
+**问题**: 文章和项目使用不同的 tags 格式，导致不一致
+
+**修复**:
+```yaml
+# 统一使用 JSON 数组格式（文章和项目都使用此格式）
+tags: ["标签 1", "标签 2", "标签 3"]
+```
+
+### 2026-03-12: 项目页面格式优化
+**问题**: 项目页面样式与文档格式不一致
+
+**修复**:
+- 标题添加 📦 emoji 图标
+- 标签样式改为边框 + 金色文字，悬停时渐变填充
+- 优化标题层级样式（h1/h2/h3 使用金色主题）
+- 添加返回按钮样式
 
 ### 2026-03-12: 搜索功能修复
 **问题**: 搜索框输入关键词后无反应，一直显示"输入关键词开始搜索..."
@@ -367,5 +426,17 @@ git push
 
 ---
 
+## 📝 更新日志
+
+| 日期 | 更新内容 |
+|-----|---------|
+| 2026-03-12 | 统一 archetypes 模板为 JSON 数组格式（default.md, posts.md, projects.md） |
+| 2026-03-12 | 统一项目和文章的 tags 格式为 JSON 数组；修复项目搜索功能；优化项目页面样式 |
+| 2026-03-12 | 修复搜索功能 tags 字段；修复移动端头像遮挡问题 |
+
+---
+
 **文档更新时间**: 2026-03-12  
 **维护者**: MIFE
+
+**重要提示**: 每次执行请求后，请记得在本文档中更新修改记录和修复历史。

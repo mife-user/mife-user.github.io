@@ -175,7 +175,7 @@
         }
     });
 
-    // 加载所有文章数据
+    // 加载所有文章数据（包括文章和项目）
     function loadPosts() {
         if (allPosts.length > 0) return;
 
@@ -185,7 +185,19 @@
             date: {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
             permalink: {{ .Permalink | jsonify | safeJS }},
             tags: {{ if .Params.tags }}{{ delimit .Params.tags "\", \"" | printf "[\"%s\"]" | safeJS }}{{ else }}[]{{ end }},
-            summary: {{ .Summary | truncate 100 | jsonify | safeJS }}
+            summary: {{ .Summary | truncate 100 | jsonify | safeJS }},
+            section: "posts"
+        });
+        {{ end }}
+
+        {{ range where .Site.RegularPages "Section" "projects" }}
+        allPosts.push({
+            title: {{ .Title | jsonify | safeJS }},
+            date: {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
+            permalink: {{ .Permalink | jsonify | safeJS }},
+            tags: {{ if .Params.tags }}{{ delimit .Params.tags "\", \"" | printf "[\"%s\"]" | safeJS }}{{ else }}[]{{ end }},
+            summary: {{ .Summary | truncate 100 | jsonify | safeJS }},
+            section: "projects"
         });
         {{ end }}
     }

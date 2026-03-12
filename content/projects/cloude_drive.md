@@ -2,10 +2,7 @@
 title: 云网盘服务
 date: 2026-03-11T09:43:00+08:00
 draft: false
-tags:
-  - ＂go＂
-  - ＂gin＂
-  - ＂网盘＂
+tags: ["Go", "Gin", "网盘"]
 ---
 # 项目链接
 [项目链接](https://github.com/mife-user/Cloud_Drive)

@@ -37,19 +37,22 @@
 
 <!-- 项目展示 -->
 <section id="projects" class="section">
-    <h2 class="section-title" data-zh="项目" data-en="PROJECTS">项目</h2>
+    <h2 class="section-title" data-zh="项目" data-en="PROJECTS">📦 项目</h2>
     <div class="project-grid">
         {{ range where .Site.RegularPages "Section" "projects" | first 6 }}
         <div class="project-card">
-            <h3 class="project-title">{{ .Title }}</h3>
-            <p class="project-desc">{{ .Summary | truncate 100 }}</p>
-            <div class="project-tags">
+            <div class="project-meta">
+                <h3 class="project-title">{{ .Title }}</h3>
                 {{ with .Params.tags }}
-                {{ range . }}
-                <span class="tag">{{ . }}</span>
-                {{ end }}
+                <div class="project-tags">
+                    {{ range . }}
+                    <span class="tag">{{ . }}</span>
+                    {{ end }}
+                </div>
                 {{ end }}
             </div>
+            <p class="project-desc">{{ .Summary | truncate 100 }}</p>
+            <a href="{{ .Permalink }}" class="project-link">阅读更多 →</a>
         </div>
         {{ end }}
     </div>

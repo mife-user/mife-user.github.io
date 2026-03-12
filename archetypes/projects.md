@@ -2,5 +2,5 @@
 title: '{{ replace .File.ContentBaseName "-" " " | title }}'
 date: {{ .Date }}
 draft: true
-tags: ["标签 1", "标签 2"]
+tags: ["技术 1", "技术 2"]
 ---
