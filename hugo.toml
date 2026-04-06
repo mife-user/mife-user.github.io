@@ -33,5 +33,3 @@ theme = 'mife-theme'
     name = '项目'
     url = '#projects'
     weight = 3
-[build]
-  noBuildLock = true
