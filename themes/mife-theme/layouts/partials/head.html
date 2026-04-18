@@ -1203,6 +1203,238 @@
         color: var(--text-muted);
     }
 
+    /* 友情链接样式 */
+    .links-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .link-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.4s ease;
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .link-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+
+    .link-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--gold-dark);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
+                    0 10px 30px rgba(212, 175, 55, 0.2);
+    }
+
+    .link-card:hover::before {
+        opacity: 1;
+    }
+
+    .link-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--gold-primary);
+        text-decoration: none;
+        transition: color 0.3s ease;
+        display: block;
+        margin-bottom: 0.8rem;
+    }
+
+    .link-title:hover {
+        color: var(--gold-light);
+    }
+
+    .link-description {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .add-link-container {
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .add-link-btn {
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+        color: var(--bg-primary);
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    }
+
+    .add-link-btn:hover {
+        background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 12px 35px rgba(212, 175, 55, 0.5);
+    }
+
+    .add-link-btn:active {
+        transform: translateY(-2px) scale(0.98);
+    }
+
+    /* 模态框样式 */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(5px);
+        z-index: 2000;
+        display: none;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 100px;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7),
+                    0 0 30px rgba(212, 175, 55, 0.2);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.2rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        background: rgba(10, 10, 10, 0.95);
+    }
+
+    .modal-header h3 {
+        color: var(--gold-primary);
+        font-size: 1.2rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }
+
+    .modal-close {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.3rem 0.5rem;
+        transition: all 0.3s ease;
+        border-radius: 5px;
+    }
+
+    .modal-close:hover {
+        color: var(--gold-primary);
+        background: rgba(212, 175, 55, 0.1);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.8rem;
+        background: rgba(10, 10, 10, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: var(--gold-primary);
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+
+    .cancel-btn {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: 0.7rem 1.5rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .cancel-btn:hover {
+        border-color: var(--gold-primary);
+        color: var(--gold-primary);
+    }
+
+    .submit-btn {
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary));
+        border: none;
+        color: var(--bg-primary);
+        padding: 0.7rem 1.5rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+    }
+
+    .submit-btn:hover {
+        background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+    }
+
     @media (max-width: 768px) {
         .search-modal {
             width: 95%;
@@ -1230,6 +1462,64 @@
         .search-close {
             font-size: 1.3rem;
             padding: 0.2rem 0.4rem;
+        }
+
+        /* 友情链接响应式 */
+        .links-container {
+            grid-template-columns: 1fr;
+            gap: 1.2rem;
+        }
+
+        .link-card {
+            padding: 1.2rem;
+            margin: 0 0.5rem;
+        }
+
+        .link-title {
+            font-size: 1.1rem;
+        }
+
+        .link-description {
+            font-size: 0.9rem;
+        }
+
+        .add-link-btn {
+            padding: 0.7rem 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* 模态框响应式 */
+        .modal-content {
+            width: 95%;
+            margin-top: 20px;
+        }
+
+        .modal-header {
+            padding: 1rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+        }
+
+        .modal-body {
+            padding: 1.2rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 0.7rem;
+            font-size: 0.95rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .cancel-btn,
+        .submit-btn {
+            width: 100%;
+            text-align: center;
         }
     }
 </style>

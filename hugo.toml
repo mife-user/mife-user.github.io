@@ -33,3 +33,7 @@ theme = 'mife-theme'
     name = '项目'
     url = '#projects'
     weight = 3
+  [[menu.main]]
+    name = '友情链接'
+    url = '/links/'
+    weight = 4

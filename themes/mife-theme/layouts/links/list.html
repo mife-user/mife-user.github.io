@@ -1,0 +1,105 @@
+{{ define "main" }}
+<!-- 友情链接页面 -->
+<section class="section">
+    <h2 class="section-title" data-zh="友情链接" data-en="FRIEND LINKS">友情链接</h2>
+    
+    <!-- 链接列表 -->
+    <div class="links-container">
+        <!-- 示例链接 -->
+        <div class="link-card">
+            <a href="https://example.com" target="_blank" class="link-title">示例博客</a>
+            <p class="link-description">这是一个示例博客，展示友情链接的样式。</p>
+        </div>
+        
+        <!-- 更多链接可以在这里添加 -->
+    </div>
+    
+    <!-- 添加链接按钮 -->
+    <div class="add-link-container">
+        <button class="btn add-link-btn" onclick="openAddLinkModal()" data-zh="添加链接" data-en="Add Link">添加链接</button>
+    </div>
+</section>
+
+<!-- 添加链接模态框 -->
+<div class="modal-overlay" id="addLinkModal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 data-zh="添加友情链接" data-en="Add Friend Link">添加友情链接</h3>
+            <button class="modal-close" onclick="closeAddLinkModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <form id="addLinkForm">
+                <div class="form-group">
+                    <label for="blogName" data-zh="博客名称" data-en="Blog Name">博客名称</label>
+                    <input type="text" id="blogName" required>
+                </div>
+                <div class="form-group">
+                    <label for="blogUrl" data-zh="博客链接" data-en="Blog URL">博客链接</label>
+                    <input type="url" id="blogUrl" required>
+                </div>
+                <div class="form-group">
+                    <label for="blogDesc" data-zh="博客描述" data-en="Blog Description">博客描述</label>
+                    <textarea id="blogDesc" rows="3" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn cancel-btn" onclick="closeAddLinkModal()" data-zh="取消" data-en="Cancel">取消</button>
+                    <button type="submit" class="btn submit-btn" data-zh="提交" data-en="Submit">提交</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 打开添加链接模态框
+    function openAddLinkModal() {
+        document.getElementById('addLinkModal').classList.add('active');
+    }
+    
+    // 关闭添加链接模态框
+    function closeAddLinkModal() {
+        document.getElementById('addLinkModal').classList.remove('active');
+    }
+    
+    // 提交表单
+    document.getElementById('addLinkForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 获取表单数据
+        const blogName = document.getElementById('blogName').value.trim();
+        const blogUrl = document.getElementById('blogUrl').value.trim();
+        const blogDesc = document.getElementById('blogDesc').value.trim();
+        
+        // 验证输入
+        if (!blogName || !blogUrl || !blogDesc) {
+            alert('请填写所有必填字段');
+            return;
+        }
+        
+        // 验证URL格式
+        const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+        if (!urlPattern.test(blogUrl)) {
+            alert('请输入有效的URL');
+            return;
+        }
+        
+        // 构建邮件内容
+        const emailBody = `博客名称: ${blogName}\n博客链接: ${blogUrl}\n博客描述: ${blogDesc}`;
+        const emailSubject = '申请添加友情链接';
+        const emailTo = '{{ .Site.Params.email }}';
+        
+        // 打开邮件客户端
+        window.location.href = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+        
+        // 关闭模态框
+        closeAddLinkModal();
+    });
+    
+    // 点击模态框背景关闭
+    document.getElementById('addLinkModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAddLinkModal();
+        }
+    });
+</script>
+{{ end }}
