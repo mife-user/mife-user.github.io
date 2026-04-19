@@ -23,17 +23,17 @@ theme = 'mife-theme'
 [menu]
   [[menu.main]]
     name = '关于'
-    url = '#about'
+    url = '/#about'
     weight = 1
   [[menu.main]]
     name = '文章'
-    url = '#posts'
+    url = '/#posts'
     weight = 2
   [[menu.main]]
     name = '项目'
-    url = '#projects'
+    url = '/#projects'
     weight = 3
   [[menu.main]]
-    name = '友情链接'
+    name = '友链'
     url = '/links/'
     weight = 4

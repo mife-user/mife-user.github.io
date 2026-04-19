@@ -18,15 +18,32 @@
 
 <style>
     .single-article {
-        max-width: 800px;
+        max-width: 900px;
         margin: 0 auto;
         padding: 2rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                    0 0 40px rgba(212, 175, 55, 0.1);
     }
 
     .article-header {
-        margin-bottom: 3rem;
+        margin-bottom: 2.5rem;
         padding-bottom: 2rem;
         border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .article-header::before {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--gold-primary), var(--gold-light));
     }
 
     .article-title {
@@ -45,7 +62,6 @@
         font-size: 1.05rem;
     }
 
-    /* Markdown 基础样式 */
     .content p {
         margin-bottom: 1.5rem;
         text-align: justify;
@@ -68,6 +84,10 @@
         font-size: 2rem;
         padding-bottom: 0.8rem;
         border-bottom: 2px solid var(--gold-dark);
+    }
+
+    .content h1:first-child {
+        display: none;
     }
 
     .content h2 {

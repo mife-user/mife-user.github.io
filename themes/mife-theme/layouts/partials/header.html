@@ -1,7 +1,7 @@
 <!-- 导航栏 -->
 <header>
     <nav>
-        <a href="#" class="logo">{{ .Site.Params.author }}</a>
+        <a href="/" class="logo">{{ .Site.Params.author }}</a>
         <ul class="nav-links">
             {{ range .Site.Menus.main }}
             <li><a href="{{ .URL }}" data-zh="{{ .Name }}" data-en="{{ i18n .Name | default .Name }}">{{ .Name }}</a></li>

@@ -5,4 +5,4 @@ set -a
 source .env
 set +a
 
-hugo --noBuildLock "$@"
+hugo "$@"

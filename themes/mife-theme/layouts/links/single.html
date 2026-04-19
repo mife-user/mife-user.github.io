@@ -7,23 +7,12 @@
     <div class="links-grid">
         <!-- 示例链接 -->
         <div class="user-card">
-            <a href="https://example.com" target="_blank" class="user-link">
+            <a href="https://github.com/LeoninCS" target="_blank" class="user-link">
                 <div class="user-avatar">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=default%20user%20avatar%20portrait&image_size=square" alt="示例用户" class="avatar-img">
+                    <img src="https://avatars.githubusercontent.com/u/147289645?v=4" alt="LeoninCS" class="avatar-img">
                 </div>
-                <h3 class="user-name">示例博客</h3>
-                <p class="user-bio">这是一个示例博客，展示友情链接的样式。</p>
-            </a>
-        </div>
-        
-        <!-- 示例链接 2 -->
-        <div class="user-card">
-            <a href="https://example2.com" target="_blank" class="user-link">
-                <div class="user-avatar">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=default%20user%20avatar%20portrait%202&image_size=square" alt="示例用户2" class="avatar-img">
-                </div>
-                <h3 class="user-name">示例博客2</h3>
-                <p class="user-bio">这是另一个示例博客，展示友情链接的卡片式布局。</p>
+                <h3 class="user-name">LeoninCS</h3>
+                <p class="user-bio">go的up主</p>
             </a>
         </div>
         
@@ -57,6 +46,11 @@
                     <label for="blogDesc" data-zh="博客描述" data-en="Blog Description">博客描述</label>
                     <textarea id="blogDesc" rows="3" required></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="blogAvatar" data-zh="头像图片URL" data-en="Avatar Image URL">头像图片URL</label>
+                    <input type="url" id="blogAvatar" placeholder="请输入头像图片的URL地址">
+                    <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.5rem;" data-zh="您可以先将图片上传到图床服务，然后将URL粘贴到这里，或者在发送邮件时直接附带图片" data-en="You can upload the image to an image hosting service first, then paste the URL here, or attach the image directly when sending the email">您可以先将图片上传到图床服务，然后将URL粘贴到这里，或者在发送邮件时直接附带图片</small>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn cancel-btn" onclick="closeAddLinkModal()" data-zh="取消" data-en="Cancel">取消</button>
                     <button type="submit" class="btn submit-btn" data-zh="提交" data-en="Submit">提交</button>
@@ -85,6 +79,7 @@
         const blogName = document.getElementById('blogName').value.trim();
         const blogUrl = document.getElementById('blogUrl').value.trim();
         const blogDesc = document.getElementById('blogDesc').value.trim();
+        const blogAvatar = document.getElementById('blogAvatar').value.trim();
         
         // 验证输入
         if (!blogName || !blogUrl || !blogDesc) {
@@ -95,13 +90,22 @@
         // 验证URL格式
         const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
         if (!urlPattern.test(blogUrl)) {
-            alert('请输入有效的URL');
+            alert('请输入有效的博客链接');
+            return;
+        }
+        
+        // 验证头像URL格式（如果提供了）
+        if (blogAvatar && !urlPattern.test(blogAvatar)) {
+            alert('请输入有效的头像图片URL');
             return;
         }
         
         // 构建邮件内容
-        const emailBody = `博客名称: ${blogName}\n博客链接: ${blogUrl}\n博客描述: ${blogDesc}`;
-        const emailSubject = '申请添加友链';
+        let emailBody = `博客名称: ${blogName}\n博客链接: ${blogUrl}\n博客描述: ${blogDesc}`;
+        if (blogAvatar) {
+            emailBody += `\n头像图片URL: ${blogAvatar}`;
+        }
+        const emailSubject = '申请添加友情链接';
         const emailTo = '{{ .Site.Params.email }}';
         
         // 打开邮件客户端

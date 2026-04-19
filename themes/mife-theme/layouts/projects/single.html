@@ -26,9 +26,15 @@
 
 <style>
     .single-article {
-        max-width: 800px;
+        max-width: 900px;
         margin: 0 auto;
         padding: 2rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                    0 0 40px rgba(212, 175, 55, 0.1);
     }
 
     .project-type-badge {
@@ -46,9 +52,20 @@
     }
 
     .article-header {
-        margin-bottom: 3rem;
+        margin-bottom: 2.5rem;
         padding-bottom: 2rem;
         border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .article-header::before {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--gold-primary), var(--gold-light));
     }
 
     .article-title {
@@ -101,7 +118,7 @@
     .content h1,
     .content h2,
     .content h3 {
-        color: var(--gold-primary);
+        color: var(--text-primary);
         font-weight: 600;
         margin-top: 2rem;
         margin-bottom: 1rem;
@@ -111,6 +128,10 @@
         font-size: 1.8rem;
         border-bottom: 1px solid var(--border-color);
         padding-bottom: 0.5rem;
+    }
+
+    .content h1:first-child {
+        display: none;
     }
 
     .content h2 {

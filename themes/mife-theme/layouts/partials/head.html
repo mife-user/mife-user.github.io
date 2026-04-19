@@ -23,7 +23,7 @@
         line-height: 1.8;
         color: var(--text-primary);
         background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)),
-                    url('{{ .Site.Params.background | relURL }}') no-repeat center center;
+                    url('{{ .Site.Params.background | relURL }}') no-repeat center top;
         background-size: cover;
         background-attachment: scroll;
         min-height: 100vh;
@@ -445,6 +445,12 @@
     }
 
     /* 项目展示 */
+    .project-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
     .project-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -475,10 +481,20 @@
 
     .project-title {
         font-size: 1.3rem;
-        color: var(--gold-primary);
+        color: var(--text-primary);
         margin-bottom: 0.8rem;
         font-weight: 600;
         letter-spacing: 0.5px;
+    }
+
+    .project-title a {
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .project-title a:hover {
+        color: var(--gold-primary);
     }
 
     .project-tags {
@@ -1204,65 +1220,100 @@
     }
 
     /* 友情链接样式 */
-    .links-container {
+    .links-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
     }
 
-    .link-card {
+    .user-card {
         background: var(--bg-card);
         border: 1px solid var(--border-color);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 2rem;
         transition: all 0.4s ease;
         backdrop-filter: blur(10px);
         position: relative;
         overflow: hidden;
+        text-align: center;
     }
 
-    .link-card::before {
+    .user-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(180deg, var(--gold-light), var(--gold-primary));
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--gold-light), var(--gold-primary));
         opacity: 0;
         transition: opacity 0.4s ease;
     }
 
-    .link-card:hover {
-        transform: translateY(-8px);
+    .user-card:hover {
+        transform: translateY(-8px) scale(1.02);
         border-color: var(--gold-dark);
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
                     0 10px 30px rgba(212, 175, 55, 0.2);
     }
 
-    .link-card:hover::before {
+    .user-card:hover::before {
         opacity: 1;
     }
 
-    .link-title {
+    .user-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        transition: all 0.3s ease;
+    }
+
+    .user-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        margin: 0 auto 1.5rem;
+        overflow: hidden;
+        border: 3px solid var(--gold-primary);
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        transition: all 0.4s ease;
+    }
+
+    .user-card:hover .user-avatar {
+        transform: scale(1.1) rotate(5deg);
+        border-color: var(--gold-light);
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+    }
+
+    .avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .user-card:hover .avatar-img {
+        transform: scale(1.2);
+    }
+
+    .user-name {
         font-size: 1.2rem;
         font-weight: 600;
         color: var(--gold-primary);
-        text-decoration: none;
-        transition: color 0.3s ease;
-        display: block;
         margin-bottom: 0.8rem;
+        transition: color 0.3s ease;
     }
 
-    .link-title:hover {
+    .user-card:hover .user-name {
         color: var(--gold-light);
     }
 
-    .link-description {
+    .user-bio {
         color: var(--text-secondary);
         font-size: 0.95rem;
         line-height: 1.6;
+        margin: 0;
     }
 
     .add-link-container {
@@ -1465,21 +1516,27 @@
         }
 
         /* 友情链接响应式 */
-        .links-container {
+        .links-grid {
             grid-template-columns: 1fr;
-            gap: 1.2rem;
+            gap: 1.5rem;
         }
 
-        .link-card {
-            padding: 1.2rem;
+        .user-card {
+            padding: 1.5rem;
             margin: 0 0.5rem;
         }
 
-        .link-title {
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.2rem;
+        }
+
+        .user-name {
             font-size: 1.1rem;
         }
 
-        .link-description {
+        .user-bio {
             font-size: 0.9rem;
         }
 
