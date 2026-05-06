@@ -1027,15 +1027,259 @@ Agent（内部 ReAct 循环）：
 
 ---
 
-## 十一、Callback：给一切装上监控
+## 十一、多 Agent 协作：一个人不够，组个团队
 
-### 11.1 Callback 能用在两个地方
+### 11.1 Runner 只有一个 Agent，但 Agent 可以是个"团队"
+
+前面我们一直是一个 Agent 干所有事。但当你写一个真正的 CLI 助手时，会发现有些任务需要**分工协作**——
+
+比如用户说"帮我查一下 Eino 框架里 Interrupt 的用法，然后写个示例"：
+
+- 需要有人去**搜索代码**（找到 Interrupt 相关源码）
+- 需要有人去**读文档**（理解用法）
+- 需要有人去**写代码**（生成示例）
+
+一个人干这三件事就乱了。最好有个分工：**搜索专家、文档专家、编码专家**，各司其职。
+
+Eino 的做法：**Runner 只管一个 Agent，但这个 Agent 内部可以管理多个子 Agent。**
+
+```
+Runner
+  └─ 主 Agent（DeepAgent 或 Supervisor）
+       ├─ 子 Agent: 搜索专家
+       ├─ 子 Agent: 文档专家
+       └─ 子 Agent: 编码专家
+```
+
+Eino 提供了三种多 Agent 协作模式，选哪个取决于你的场景。
+
+### 11.2 方式一：DeepAgent —— 主 Agent 调子 Agent 干活
+
+**适合**：你有一个主 Agent 做决策，某些具体任务委派给专家 Agent 去做，做完结果返回给主 Agent。
+
+**打个比方**：你（主 Agent）让同事帮你搜资料，同事搜完把结果交给你，你根据结果决定怎么回答。
+
+```go
+import "github.com/cloudwego/eino/adk/prebuilt/deep"
+
+// 1. 创建子 Agent：搜索专家
+searchAgent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
+    Name:        "SearchAgent",
+    Description: "搜索代码和文档的专家",  // ← 主 Agent 根据这个描述决定什么时候用它
+    Instruction: "你是代码搜索专家，用 search_code 和 read_file 工具找到相关内容",
+    Model:       model,
+    ToolsConfig: adk.ToolsConfig{
+        ToolsNodeConfig: compose.ToolsNodeConfig{
+            Tools: []tool.BaseTool{searchCodeTool, readFileTool},
+        },
+    },
+})
+
+// 2. 创建子 Agent：编码专家
+codeAgent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
+    Name:        "CodeAgent",
+    Description: "编写和修改代码的专家",
+    Instruction: "你是Go编程专家，根据需求编写代码",
+    Model:       model,
+})
+
+// 3. 创建 DeepAgent（主 Agent）——把子 Agent 放进去
+mainAgent, _ := deep.New(ctx, &deep.Config{
+    Name:        "MainAgent",
+    Description: "编程助手主控",
+    ChatModel:   model,
+    SubAgents:   []adk.Agent{searchAgent, codeAgent}, // ← 子 Agent 列表
+    Instruction: `你是编程助手主控。工作方式：
+1. 收到用户需求后，先分析需要哪些专家
+2. 把具体任务委派给合适的专家去执行
+3. 汇总专家的结果，给出最终回答`,
+})
+
+// 4. 运行——和普通 Agent 完全一样！
+runner := adk.NewRunner(ctx, adk.RunnerConfig{Agent: mainAgent})
+iter := runner.Query(ctx, "查一下项目中 Interrupt 的用法，写个示例")
+
+for {
+    event, ok := iter.Next()
+    if !ok { break }
+    fmt.Print(event.Message.Content)
+}
+```
+
+**运行时发生了什么？** 主 Agent 内部有一个叫 `task` 的工具，当模型判断需要专家帮忙时，会自动调用：
+
+```
+用户: "查一下 Interrupt 的用法并写示例"
+  ↓
+主 Agent（模型思考）: "这事需要两步：先搜索，再写代码"
+  第1步: 调用 task 工具 {"subagent_type":"SearchAgent", "description":"搜索 Interrupt 用法"}
+    → SearchAgent 启动，搜索代码，返回结果给主 Agent
+  第2步: 调用 task 工具 {"subagent_type":"CodeAgent", "description":"根据搜索结果写示例"}
+    → CodeAgent 启动，写代码，返回结果给主 Agent
+  第3步: 主 Agent 汇总结果，输出给用户
+```
+
+**关键特性**：
+- **上下文隔离**：子 Agent 只收到委派的任务描述，不会看到整个对话历史（保持专注）
+- **自动判断**：模型自己决定什么时候用哪个专家，你不需要写 if-else
+- **Session 共享**：主 Agent 的会话状态会自动传递给子 Agent
+
+### 11.3 方式二：AgentTool —— 把 Agent 当 Tool 用
+
+**和 DeepAgent 的区别**：DeepAgent 是框架帮你管子 Agent。AgentTool 是你手动把一个 Agent 包装成 Tool，然后放进另一个 Agent 的工具列表。
+
+**适合**：你已经有了一些 Agent，想以更细粒度的方式控制它们。
+
+```go
+// 1. 创建子 Agent
+codeAgent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
+    Name: "CodeAgent",
+    // ...
+})
+
+// 2. 把 Agent 包装成 Tool  ← 核心：Agent → Tool
+codeTool, _ := adk.AgentAsTool(ctx, codeAgent,
+    "call_code_expert",       // Tool 名称
+    "让编码专家写代码",         // Tool 描述
+)
+
+// 3. 放进另一个 Agent 的工具列表，和普通 Tool 一样用
+mainAgent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
+    Name:  "MainAgent",
+    Model: model,
+    ToolsConfig: adk.ToolsConfig{
+        ToolsNodeConfig: compose.ToolsNodeConfig{
+            Tools: []tool.BaseTool{
+                readFileTool,
+                searchTool,
+                codeTool,  // ← Agent 包装的 Tool，和普通 Tool 混用
+            },
+        },
+    },
+})
+
+runner := adk.NewRunner(ctx, adk.RunnerConfig{Agent: mainAgent})
+// 运行时模型会像调普通工具一样调用 call_code_expert
+```
+
+### 11.4 方式三：Supervisor —— 监工模式，自动来回调度
+
+**和 DeepAgent 的区别**：DeepAgent 是"主 Agent 调子 Agent，拿到结果自己用"。Supervisor 是"监工一轮一轮地指挥，子 Agent 做完自动回报给监工，监工再决定下一步"。
+
+**适合**：复杂的多步骤任务，需要反复调度多个 Agent。
+
+```go
+import "github.com/cloudwego/eino/adk/prebuilt/supervisor"
+
+// 1. 创建子 Agent
+researcher, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
+    Name:        "Researcher",
+    Description: "搜索和整理资料",
+    Instruction: "你是研究员，负责搜索相关信息并整理成文档",
+    Model:       model,
+    ToolsConfig: /* 搜索工具 */,
+})
+
+writer, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
+    Name:        "Writer",
+    Description: "撰写报告",
+    Instruction: "你是写手，根据研究资料撰写正式报告",
+    Model:       model,
+})
+
+// 2. 创建 Supervisor
+supervisor, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
+    Name:  "Supervisor",
+    Model: model,
+    Instruction: `你是项目监工。工作方式：
+- 收到主题后，先转交给 Researcher 搜索资料
+- Researcher 完成后，转交给 Writer 撰写报告
+- Writer 完成后，输出最终报告
+- 不要自己干活，始终委派给子 Agent`,
+})
+
+// 3. 组装
+supervisorAgent, _ := supervisor.New(ctx, &supervisor.Config{
+    Supervisor: supervisor,
+    SubAgents:  []adk.Agent{researcher, writer},
+})
+
+// 4. 运行
+runner := adk.NewRunner(ctx, adk.RunnerConfig{Agent: supervisorAgent})
+iter := runner.Query(ctx, "写一份关于 Go 语言并发模型的报告")
+```
+
+**Supervisor 的核心机制——Transfer（转交）**：
+
+```
+Runner 启动 Supervisor
+  ↓
+Supervisor 分析任务 → 决定调 Researcher
+  → [Transfer 事件] 转交给 Researcher
+  ↓
+Researcher 搜索完成 → [Transfer 事件] 自动回报 Supervisor
+  ↓
+Supervisor 看到结果 → 决定调 Writer
+  → [Transfer 事件] 转交给 Writer
+  ↓
+Writer 写完 → [Transfer 事件] 自动回报 Supervisor
+  ↓
+Supervisor 输出最终报告
+```
+
+**关键**：子 Agent 完成后会**自动 Transfer 回 Supervisor**（框架帮你做了），Supervisor 看到回报后决定下一步。这个"自动回报"机制让 Supervisor 能持续调度。
+
+### 11.5 三种方式对比
+
+| | DeepAgent | AgentTool | Supervisor |
+|---|---|---|---|
+| **比喻** | 经理安排下属干活，下属汇报结果 | 工具箱里有个"机器人助手"，按需取用 | 监工来回指挥，工人做完自动回报 |
+| **子Agent返回** | 结果返回主Agent，主Agent继续 | 结果返回调用方 | 自动Transfer回报给Supervisor |
+| **适合场景** | 委派具体任务，主Agent汇总结果 | 自定义控制粒度 | 多步骤多轮调度 |
+| **复杂度** | 低，开箱即用 | 中，手动管理 | 中，需设计调度流程 |
+| **谁做决策** | 模型自己判断何时调子Agent | 模型判断何时调工具 | Supervisor指令里写好的流程 + 模型判断 |
+
+### 11.6 迷你 Claude Code 用哪种？
+
+对于 CLI 编程助手，推荐 **DeepAgent**：
+
+```go
+// 迷你CC的专家团队
+searchAgent  // 搜索代码、读文件
+codeAgent    // 写代码、改代码
+shellAgent   // 执行命令、运行测试
+
+mainAgent := deep.New(ctx, &deep.Config{
+    ChatModel: model,
+    SubAgents: []adk.Agent{searchAgent, codeAgent, shellAgent},
+})
+```
+
+模型会自动判断什么时候该搜索、什么时候该写代码、什么时候该执行命令。
+
+### 11.7 更多预置模式
+
+除了上面三种，Eino 还内置了这些模式，全部可以直接用：
+
+| 模式 | 做什么 | 一句话 |
+|---|---|---|
+| **SequentialAgent** | 顺序执行 | A做完→B拿到A的结果继续做→C拿到B的结果继续做 |
+| **ParallelAgent** | 并行执行 | A、B、C 同时干活，互不等待 |
+| **LoopAgent** | 循环打磨 | A 写完 → B 审阅 → 不通过就回去改 → 通过才输出 |
+
+用法都一样——创建、放进 Runner、Query。你只需要选哪个模式适合你的场景。
+
+---
+
+## 十二、Callback：给一切装上监控
+
+### 12.1 Callback 能用在两个地方
 
 Callback 可以注入到**所有 Runnable**——不管是 Agent 还是 Graph。
 
 它的作用：在执行过程中插入你自己的逻辑，比如打印日志、记录耗时、发告警。
 
-### 11.2 在 Agent 上用 Callback
+### 12.2 在 Agent 上用 Callback
 
 ```go
 // 创建一个日志 Callback
@@ -1068,7 +1312,7 @@ iter := runner.Query(ctx, "帮我查个bug", compose.WithCallbacks(handler))
 [ChatModel] 完成          ← 模型给出最终回答
 ```
 
-### 11.3 在 Graph 上用 Callback
+### 12.3 在 Graph 上用 Callback
 
 ```go
 // 同样的 handler，用在 Graph 上
@@ -1081,7 +1325,7 @@ result, _ := compiled.Invoke(ctx, "main.go", compose.WithCallbacks(handler))
 // [count_lines] 完成
 ```
 
-### 11.4 Callback 的三种精度
+### 12.4 Callback 的三种精度
 
 ```go
 // 精度1：全局，所有节点都触发
@@ -1094,7 +1338,7 @@ compiled.Invoke(ctx, input, compose.WithChatModelOption(model.WithTemperature(0.
 compiled.Invoke(ctx, input, compose.WithCallbacks(handler).DesignateNode("read_file"))
 ```
 
-### 11.5 生产级：集成 Langfuse 做链路追踪
+### 12.5 生产级：集成 Langfuse 做链路追踪
 
 自己写 Callback 只能打 log。要追踪 Token、延迟、费用，用 Eino 集成的 Langfuse：
 
@@ -1118,11 +1362,11 @@ flusher() // 程序退出前确保数据都上传了
 
 ---
 
-## 十二、进阶特性速览
+## 十三、进阶特性速览
 
 前面十一章已经覆盖了构建 CLI 助手的全部核心知识。以下特性用到时再回来查即可：
 
-### 12.1 Interrupt/Resume：中途暂停等用户确认
+### 13.1 Interrupt/Resume：中途暂停等用户确认
 
 **场景**：Agent 要执行删除文件的操作，暂停等你点"确认"再继续。
 
@@ -1148,7 +1392,7 @@ iter = runner.Query(ctx, "确认",
 // → 从断点继续执行
 ```
 
-### 12.2 Middleware：比 Callback 更强的拦截能力
+### 13.2 Middleware：比 Callback 更强的拦截能力
 
 Callback 只能**观察**（看发生了什么）。Middleware 可以**干预**（修改消息、改写返回值）。
 
@@ -1170,7 +1414,7 @@ agent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 | `Filesystem` | 提供文件读写工具集 |
 | `Skill` | 动态加载技能模块 |
 
-### 12.3 其他特性
+### 13.3 其他特性
 
 | 特性 | 一句话 |
 |---|---|
@@ -1181,32 +1425,32 @@ agent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 
 ---
 
-## 十三、总结
+## 十四、总结
 
-### 13.1 一张图记住 Eino 的两种用法
+### 14.1 一张图记住 Eino 的所有用法
 
 ```text
              你的需求是什么？
-              /            \
-             /              \
-    开放式对话               固定流程
-    "帮我查bug"             "每天备份+发报告"
-         |                       |
-         ▼                       ▼
-   Agent + Runner              Graph
-         |                       |
-    runner.Query()         compiled.Invoke()
-         |                       |
-    返回事件流                返回最终结果
-    (逐字流式)               (一次性)
-         |                       |
-         └───────┬───────────────┘
-                 |
-         可以组合：Graph → Tool → Agent
-         (把固定流程包装成工具交给 Agent)
+              /            \             \
+             /              \             \
+    开放式对话               固定流程        复杂任务
+    "帮我查bug"             "每天备份"      "搜代码→写报告"
+         |                       |              |
+         ▼                       ▼              ▼
+   Agent + Runner              Graph        DeepAgent
+         |                       |         /    |    \
+    runner.Query()         compiled.Invoke()  /     |     \
+         |                       |           ▼      ▼      ▼
+    返回事件流                返回最终结果  搜索专家  编码专家  审查专家
+    (逐字流式)               (一次性)        \      |      /
+         |                       |            \     |     /
+         └───────┬───────────────┘              ▼    ▼    ▼
+                 |                         Runner.Query()
+         可以组合：Graph → Tool → Agent    → 返回事件流
+         DeepAgent/AgentTool/Supervisor   (和单Agent用法一样)
 ```
 
-### 13.2 你的迷你 Claude Code 完整架构
+### 14.2 你的迷你 Claude Code 完整架构
 
 ```
 ┌─────────────────────────────────────────┐
@@ -1220,22 +1464,25 @@ agent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
       └──────────┬──────────┘
                  │
       ┌──────────▼──────────┐
-      │   ChatModelAgent    │  内置 ReAct 循环
+      │   DeepAgent (主控)  │  多Agent协作，自动调度专家
       │                     │
-      │  模型：gpt-4o       │  ← 决策：说话 or 调工具？
+      │  模型：gpt-4o       │  ← 决策：说话、调工具、还是委派专家？
       │                     │
-      │  工具：             │  ← 执行：真的干活
-      │  ├ read_file        │
-      │  ├ search_code      │
-      │  ├ run_command      │
-      │  └ safe_commit (GraphTool) │ ← Graph 包装的工具
+      │  工具 & 专家：       │
+      │  ├ read_file (Tool) │  ← 读文件
+      │  ├ search_code (Tool)│ ← 搜索代码
+      │  ├ run_command (Tool)│ ← 执行命令
+      │  ├ safe_commit (GraphTool)│ ← Graph包装的工具
+      │  ├ SearchAgent (子Agent)│ ← 搜索专家
+      │  ├ CodeAgent (子Agent) │ ← 编码专家
+      │  └ ShellAgent (子Agent)│ ← 命令执行专家
       │                     │
       │  Callback:          │  ← 监控：日志、Token统计
       │  └ Langfuse         │
       └─────────────────────┘
 ```
 
-### 13.3 一次工具调用的完整过程（最重要的一张图）
+### 14.3 一次工具调用的完整过程（最重要的一张图）
 
 ```
 用户输入："帮我查看 main.go"
@@ -1289,11 +1536,12 @@ Runner 把模型回复包装成 Event，通过迭代器返回
 终端显示："main.go 的内容是：package main..."
 ```
 
-### 13.4 三个核心原则
+### 14.4 四个核心原则
 
 1. **Agent 就是"模型+工具+循环"的打包**。你给工具，Agent 跑循环，Runner 管理对话。
 2. **Graph 就是"固定步骤+固定顺序"的图纸**。没有自由发挥，一步接一步，执行完返回结果。
-3. **Graph 和 Agent 不是先后关系，是平行关系**。选哪个取决于你的场景。可以组合：把 Graph 变成 Tool 给 Agent 用。
+3. **多 Agent 就是"给主 Agent 配团队"**。DeepAgent 开箱即用，AgentTool 手动控制，Supervisor 监工调度。Runner 只管一个 Agent，但那个 Agent 内部可以是一个团队。
+4. **Graph、Agent、多 Agent 不是先后关系，是不同场景的选择**。简单任务用 Agent，固定流程用 Graph，复杂任务用 DeepAgent。它们可以组合：Graph 变 Tool、Agent 变 Tool。最终都通过 Runner.Query() 运行。
 
 ---
 

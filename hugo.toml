@@ -3,6 +3,12 @@ languageCode = 'zh-CN'
 title = 'MIFE Blog'
 theme = 'mife-theme'
 
+[markup]
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = false
+
 [security]
   [security.funcs]
     getenv = ['^HUGO_', '^CI$']

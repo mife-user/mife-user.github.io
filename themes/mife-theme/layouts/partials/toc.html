@@ -1,0 +1,8 @@
+{{ if and (gt .WordCount 100) (.TableOfContents) }}
+<details class="toc-container" open>
+    <summary class="toc-title">
+        <span data-zh="📑 目录" data-en="📑 Table of Contents">📑 目录</span>
+    </summary>
+    {{ .TableOfContents }}
+</details>
+{{ end }}

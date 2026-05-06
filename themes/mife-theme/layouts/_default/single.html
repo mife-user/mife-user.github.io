@@ -4,6 +4,7 @@
         <h1 class="article-title">{{ .Title }}</h1>
         <div class="post-date">{{ .Date.Format "2006-01-02" }}</div>
     </header>
+    {{ partial "toc.html" . }}
     <div class="content">
         {{ .Content }}
     </div>
@@ -371,6 +372,101 @@
         border-color: #4ecdc4;
     }
 
+    /* 目录样式 */
+    .toc-container {
+        margin: 0 0 2rem 0;
+        padding: 1.2rem 1.5rem;
+        background: rgba(26, 26, 26, 0.5);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+    }
+
+    .toc-container[open] {
+        border-color: rgba(212, 175, 55, 0.3);
+    }
+
+    .toc-title {
+        cursor: pointer;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--gold-primary);
+        letter-spacing: 1px;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        user-select: none;
+    }
+
+    .toc-title::-webkit-details-marker {
+        display: none;
+    }
+
+    .toc-title::before {
+        content: '▶';
+        display: inline-block;
+        font-size: 0.7rem;
+        transition: transform 0.3s ease;
+        color: var(--text-muted);
+    }
+
+    .toc-container[open] .toc-title::before {
+        transform: rotate(90deg);
+    }
+
+    .toc-container #TableOfContents {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .toc-container #TableOfContents ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+
+    .toc-container #TableOfContents > ul {
+        padding-left: 0;
+    }
+
+    .toc-container #TableOfContents li {
+        margin-bottom: 0.4rem;
+        line-height: 1.7;
+    }
+
+    .toc-container #TableOfContents > ul > li {
+        margin-bottom: 0.6rem;
+    }
+
+    .toc-container #TableOfContents a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.92rem;
+        transition: all 0.25s ease;
+        display: inline-block;
+        padding: 0.15rem 0;
+        border-bottom: 1px solid transparent;
+    }
+
+    .toc-container #TableOfContents > ul > li > a {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .toc-container #TableOfContents a:hover {
+        color: var(--gold-primary);
+        border-bottom-color: var(--gold-primary);
+    }
+
+    .toc-container #TableOfContents ul ul {
+        padding-left: 1.2rem;
+        margin-top: 0.3rem;
+        border-left: 2px solid rgba(212, 175, 55, 0.2);
+    }
+
     .article-footer {
         margin-top: 3rem;
         padding-top: 2rem;
@@ -381,6 +477,19 @@
     @media (max-width: 768px) {
         .single-article {
             padding: 1.5rem;
+        }
+
+        .toc-container {
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .toc-container #TableOfContents a {
+            font-size: 0.88rem;
+        }
+
+        .toc-container #TableOfContents > ul > li > a {
+            font-size: 0.92rem;
         }
 
         .article-title {
