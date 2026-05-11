@@ -195,6 +195,11 @@ type ChatModelConfig struct {
     TopP        *float32 // 核采样，范围 0~1。另一种控制随机性的方式
                          // 一般调 Temperature 就够了，这个选填
 
+    // ── 思考模型相关（DeepSeek R1 / OpenAI o1 等） ──
+    ReasoningEffort string // 推理力度。控制思考模型花多少时间推理
+                           // DeepSeek: 不支持此字段（模型自动决定）
+                           // OpenAI o1: "low" / "medium" / "high"，默认 "medium"
+
     // ── 高级选项 ──
     Stop       []string // 停止词。模型遇到这些词就停止生成
     ExtraFields map[string]any // 需要透传给 API 的额外字段（如某些厂商的特殊参数）
@@ -234,6 +239,14 @@ model, _ := openai.NewChatModel(ctx, &openai.ChatModelConfig{
     APIKey:  os.Getenv("ONEAPI_KEY"),
     BaseURL: "https://your-proxy.com/v1",     // ← 中转站地址
 })
+
+// 场景5：DeepSeek R1 思考模型（有推理过程）
+model, _ := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+    Model:   "deepseek-reasoner",             // DeepSeek 的推理模型
+    APIKey:  os.Getenv("DEEPSEEK_API_KEY"),
+    BaseURL: "https://api.deepseek.com/v1",
+    // ReasoningEffort 不需要设置，DeepSeek 自动控制推理深度
+})
 ```
 
 > **注意**：`Temperature`、`MaxTokens`、`TopP` 为什么是指针？因为 Go 中无法区分"没设置"和"设置为 0"。用指针后，`nil` 表示用模型默认值，非 `nil` 表示你显式设置了值。
@@ -258,8 +271,12 @@ type Message struct {
     ToolCallID string    // 当 Role == schema.Tool 时，对应哪个 ToolCall
     ToolName  string     // 当 Role == schema.Tool 时，来自哪个工具
 
+    // ── 思考内容（DeepSeek R1 / OpenAI o1 等思考模型） ──
+    ReasoningContent string // 模型的内部推理过程。思考模型在正式回答前会先输出推理内容
+                            // 注意：Content 和 ReasoningContent 是分开的，不会混在一起
+
     // ── 元数据 ──
-    Extra map[string]any // 扩展字段，存放各模型特有的额外信息
+    Extra map[string]any // 扩展字段，存放各模型特有的额外信息（reasoning 内容也会冗余存此处）
 }
 ```
 
@@ -2113,7 +2130,106 @@ agent, _ := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 | `Filesystem` | 提供文件读写工具集 |
 | `Skill` | 动态加载技能模块 |
 
-### 13.3 其他特性
+### 13.3 思考模型（DeepSeek R1 / OpenAI o1）的处理
+
+DeepSeek R1、OpenAI o1/o3 等"思考模型"在正式回答之前会先进行一段内部推理（thinking/reasoning）。**这段思考内容不会混入 `Message.Content`，而是独立存放在 `Message.ReasoningContent` 中。**
+
+**Message 结构体中的专用字段：**
+
+```go
+type Message struct {
+    Role    RoleType `json:"role"`
+    Content string   `json:"content"`              // ← 正式的回复内容
+    // ...
+    ReasoningContent string `json:"reasoning_content,omitempty"` // ← 模型的思考过程
+    Extra map[string]any `json:"extra,omitempty"`               // ← 也冗余存储在 Extra["reasoning-content"] 中
+}
+```
+
+**两份存储，两种读取方式：**
+
+```go
+reply, _ := model.Generate(ctx, messages)
+
+// 方式1：直接读字段
+fmt.Println("思考过程:", reply.ReasoningContent)
+fmt.Println("正式回答:", reply.Content)
+
+// 方式2：从 Extra 读取（导入 eino-ext 的 openai 工具包）
+import openaiutil "github.com/cloudwego/eino-ext/libs/acl/openai"
+
+rc, ok := openaiutil.GetReasoningContent(reply)
+if ok {
+    fmt.Println("思考过程:", rc)
+}
+```
+
+> **注意**：`Content` 和 `ReasoningContent` 是**互斥的**——模型在思考阶段只产出 reasoning content（Content 为空），思考结束后才产出正式回答 content。
+
+**流式场景的关键处理：**
+
+DeepSeek R1 在流式返回时，大量 chunk 的 `content` 为空但 `reasoning_content` 有数据。Eino 的 stream builder 不会跳过这些 chunk：
+
+```go
+// Eino 内部 stream builder 逻辑（简化）：
+rc, ok := GetReasoningContent(msg)
+if msg.Content == "" && len(msg.ToolCalls) == 0 && !(ok && len(rc) > 0) {
+    // 真正空的消息 → 跳过
+    continue
+}
+// 有 reasoning content → 不跳过，正常向下游传递
+// 用户通过 runner.Query() 返回的迭代器逐 chunk 收到思考过程
+```
+
+使用 Agent 时，你通过 `iter.Next()` 拿到的 event 中可能有连续多个 event 的 `Content` 为空，但 `ReasoningContent` 在逐步累积——这就是模型在"思考中"。
+
+**完整的流式推理处理示例：**
+
+```go
+iter := runner.Query(ctx, "解释一下 Golang 的调度器")
+
+for {
+    event, ok := iter.Next()
+    if !ok { break }
+
+    msg := event.Message
+
+    // 思考过程（通常折叠或弱化显示）
+    if msg.ReasoningContent != "" {
+        fmt.Printf("\r[思考中] %s", msg.ReasoningContent)
+        continue
+    }
+
+    // 正式回答
+    if msg.Content != "" {
+        fmt.Print(msg.Content)
+    }
+}
+```
+
+**Token 用量中单独统计了推理 Token：**
+
+```go
+if reply.ResponseMeta != nil && reply.ResponseMeta.Usage != nil {
+    usage := reply.ResponseMeta.Usage
+    fmt.Printf("输入Token: %d\n", usage.PromptTokens)
+    fmt.Printf("输出Token: %d（其中推理Token: %d）\n",
+        usage.CompletionTokens,
+        usage.CompletionTokensDetails.ReasoningTokens)
+}
+```
+
+**兼容性处理：**
+
+不同厂商的 reasoning 字段名可能不同（如 `reasoning_content` / `reasoning`）。Eino 的处理策略：
+
+1. 优先取 OpenAI 标准的 `reasoning_content` 字段
+2. 如果没有，遍历 `Extra` 中查找 `reasoning` 等替代 key
+3. DeepSeek R1、OpenAI o1/o3、Gemini Thinking、Qwen QwQ 等均通过此机制支持
+
+> **一句话总结**：思考内容不会混进 `Content`，它独立存放在 `ReasoningContent` 字段 + `Extra["reasoning-content"]` 中。显示时你需要区分"思考过程"（可折叠/隐藏）和"正式回答"（展示给用户）。
+
+### 13.4 其他特性
 
 | 特性 | 一句话 |
 |---|---|
