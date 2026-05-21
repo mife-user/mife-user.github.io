@@ -3,7 +3,17 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:www.cloudwego.io)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(hugo --noBuildLock)",
+      "Bash(Select-Object -Last 20)",
+      "Bash(Select-Object -First 20)",
+      "PowerShell(hugo *)",
+      "PowerShell(Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); $entry = $zip.GetEntry\\(\"word/document.xml\"\\); $stream = $entry.Open\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $xml = $reader.ReadToEnd\\(\\); $reader.Close\\(\\); $stream.Close\\(\\); $zip.Dispose\\(\\); $xml -replace '<[^>]+>', ' ' -replace '\\\\s+', ' ' -replace ' {2,}', \"`n\")",
+      "PowerShell($word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); $text = $doc.Content.Text; $doc.Close\\(\\); $word.Quit\\(\\); Write-Output \"Word COM 可用，文档全文获取成功\"; Write-Output \"---\"; $text)",
+      "PowerShell($word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); Write-Output \"Tables: $\\($doc.Tables.Count\\)\"; Write-Output \"Shapes: $\\($doc.Shapes.Count\\)\"; Write-Output \"Paragraphs: $\\($doc.Paragraphs.Count\\)\"; Write-Output \"Sections: $\\($doc.Sections.Count\\)\"; for \\($i=1; $i -le $doc.Tables.Count; $i++\\) { Write-Output \"--- Table $i ---\"; $table = $doc.Tables.Item\\($i\\); Write-Output \"Rows: $\\($table.Rows.Count\\), Cols: $\\($table.Columns.Count\\)\"; for \\($r=1; $r -le $table.Rows.Count; $r++\\) { $row = $table.Rows.Item\\($r\\); for \\($c=1; $c -le $table.Columns.Count; $c++\\) { $cellText = $row.Cells.Item\\($c\\).Range.Text; $cellText = $cellText -replace '\\\\r\\\\a', '' -replace '[\\\\x00-\\\\x1f]', ''; Write-Output \"  [$r,$c]: $cellText\" } } }; $doc.Close\\(\\); $word.Quit\\(\\))",
+      "PowerShell($word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); for \\($i=1; $i -le $doc.Shapes.Count; $i++\\) { $shape = $doc.Shapes.Item\\($i\\); Write-Output \"--- Shape $i \\(Type: $\\($shape.Type\\), Name: $\\($shape.Name\\)\\) ---\"; if \\($shape.TextFrame.HasText -ne 0\\) { $text = $shape.TextFrame.TextRange.Text; $text = $text -replace '[\\\\x00-\\\\x1f]+', '|'; Write-Output \"Text: $text\" } }; $doc.Close\\(\\); $word.Quit\\(\\))",
+      "PowerShell($word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); for \\($i=1; $i -le $doc.Paragraphs.Count; $i++\\) { $p = $doc.Paragraphs.Item\\($i\\); $text = $p.Range.Text; $text = $text -replace '\\\\r', '' -replace '\\\\a', ''; if \\($text.Trim\\(\\) -ne ''\\) { Write-Output \"[P$i]: $text\" } }; $doc.Close\\(\\); $word.Quit\\(\\))",
+      "PowerShell($word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); for \\($i=1; $i -le $doc.Paragraphs.Count; $i++\\) { $t = $doc.Paragraphs.Item\\($i\\).Range.Text -replace '\\\\r','' -replace '\\\\a',''; if \\($t.Trim\\(\\)\\) { Write-Output \"[$i] $t\" } }; $doc.Close\\(\\); $word.Quit\\(\\))"
     ]
   }
 }
