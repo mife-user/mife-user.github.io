@@ -14,9 +14,9 @@
 <!-- 文章列表 -->
 <section id="posts" class="section">
     <h2 class="section-title" data-zh="文章" data-en="ARTICLES">文章</h2>
-    <div class="post-list">
-        {{ range where .Site.RegularPages "Section" "posts" | first 10 }}
-        <article class="post-card">
+    <div class="post-list" id="post-list">
+        {{ range $index, $post := (where .Site.RegularPages "Section" "posts") }}
+        <article class="post-card" data-post-index="{{ $index }}">
             <div class="post-meta">
                 <div class="post-date">{{ .Date.Format "2006-01-02" }}</div>
                 {{ with .Params.tags }}
@@ -33,6 +33,7 @@
         </article>
         {{ end }}
     </div>
+    <nav class="pagination" id="post-pagination" aria-label="文章分页"></nav>
 </section>
 
 <!-- 项目展示 -->

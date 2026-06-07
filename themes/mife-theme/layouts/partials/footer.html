@@ -37,6 +37,9 @@
         document.querySelectorAll('[data-zh][data-en]').forEach(el => {
             el.textContent = currentLang === 'zh' ? el.getAttribute('data-zh') : el.getAttribute('data-en');
         });
+
+        // 通知分页组件语言已切换
+        document.dispatchEvent(new CustomEvent('languagechange', { detail: { lang: currentLang } }));
     }
 
     // 音乐播放控制
@@ -227,4 +230,88 @@
             searchOverlay.classList.remove('active');
         }
     });
+</script>
+
+<!-- 文章分页 -->
+<script>
+(function() {
+    var POSTS_PER_PAGE = 5;
+    var postList = document.getElementById('post-list');
+    var paginationEl = document.getElementById('post-pagination');
+
+    if (!postList || !paginationEl) return;
+
+    var postCards = postList.querySelectorAll('.post-card');
+    if (!postCards.length) return;
+
+    var totalPages = Math.ceil(postCards.length / POSTS_PER_PAGE);
+    if (totalPages <= 1) return;
+
+    var currentPage = 1;
+
+    function showPage(page) {
+        currentPage = page;
+        var start = (page - 1) * POSTS_PER_PAGE;
+        var end = start + POSTS_PER_PAGE;
+
+        for (var i = 0; i < postCards.length; i++) {
+            if (i >= start && i < end) {
+                postCards[i].style.display = '';
+                postCards[i].style.animation = 'fadeInUp 0.4s ease';
+            } else {
+                postCards[i].style.display = 'none';
+            }
+        }
+
+        renderButtons();
+        paginationEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderButtons() {
+        var zh = currentLang === 'zh';
+        var prevText = zh ? '上一页' : 'Prev';
+        var nextText = zh ? '下一页' : 'Next';
+        var html = '';
+
+        // 上一页
+        var prevDisabled = currentPage === 1 ? ' disabled' : '';
+        html += '<button class="pagination-btn' + prevDisabled + '" data-action="prev">' + prevText + '</button>';
+
+        // 页码
+        for (var i = 1; i <= totalPages; i++) {
+            var active = i === currentPage ? ' active' : '';
+            html += '<button class="pagination-btn' + active + '" data-action="page" data-page="' + i + '">' + i + '</button>';
+        }
+
+        // 下一页
+        var nextDisabled = currentPage === totalPages ? ' disabled' : '';
+        html += '<button class="pagination-btn' + nextDisabled + '" data-action="next">' + nextText + '</button>';
+
+        paginationEl.innerHTML = html;
+    }
+
+    // 事件委托
+    paginationEl.addEventListener('click', function(e) {
+        var btn = e.target.closest('.pagination-btn');
+        if (!btn || btn.classList.contains('disabled')) return;
+
+        var action = btn.getAttribute('data-action');
+        if (action === 'prev' && currentPage > 1) {
+            showPage(currentPage - 1);
+        } else if (action === 'next' && currentPage < totalPages) {
+            showPage(currentPage + 1);
+        } else if (action === 'page') {
+            var page = parseInt(btn.getAttribute('data-page'));
+            if (page !== currentPage) showPage(page);
+        }
+    });
+
+    // 语言切换时重新渲染按钮
+    document.addEventListener('languagechange', function() {
+        if (totalPages > 1) renderButtons();
+    });
+
+    // 初始化
+    showPage(1);
+})();
 </script>
