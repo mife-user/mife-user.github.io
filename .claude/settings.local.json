@@ -15,7 +15,8 @@
       "PowerShell($word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); for \\($i=1; $i -le $doc.Paragraphs.Count; $i++\\) { $p = $doc.Paragraphs.Item\\($i\\); $text = $p.Range.Text; $text = $text -replace '\\\\r', '' -replace '\\\\a', ''; if \\($text.Trim\\(\\) -ne ''\\) { Write-Output \"[P$i]: $text\" } }; $doc.Close\\(\\); $word.Quit\\(\\))",
       "PowerShell($word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open\\(\"C:\\\\Users\\\\asus\\\\Desktop\\\\盛小峰.docx\"\\); for \\($i=1; $i -le $doc.Paragraphs.Count; $i++\\) { $t = $doc.Paragraphs.Item\\($i\\).Range.Text -replace '\\\\r','' -replace '\\\\a',''; if \\($t.Trim\\(\\)\\) { Write-Output \"[$i] $t\" } }; $doc.Close\\(\\); $word.Quit\\(\\))",
       "Bash(Get-ChildItem *)",
-      "Bash(Select-Object -Last 10)"
+      "Bash(Select-Object -Last 10)",
+      "Bash(git *)"
     ]
   }
 }
