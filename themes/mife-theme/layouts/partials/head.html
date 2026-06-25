@@ -956,7 +956,7 @@
         }
     }
 
-    /* 音乐播放按钮 - 圆形唱片样式 */
+    /* ========== 音乐播放器 — 圆形唱片样式 ========== */
     .music-player {
         position: fixed;
         bottom: 30px;
@@ -964,35 +964,55 @@
         z-index: 1000;
     }
 
+    /* 悬浮桥 — 扩展 hover 区域，避免光标在两按钮之间时触发收起 */
+    .music-player::before {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: -12px;
+        bottom: -12px;
+        left: -130px;
+        z-index: -1;
+    }
+
+    /* ---- 按钮共用基类 ---- */
     .music-btn {
-        width: 60px;
-        height: 60px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary), var(--gold-light));
-        border: 3px solid rgba(255, 255, 255, 0.2);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        outline: none;
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold-primary), var(--gold-light));
         box-shadow: 0 4px 20px rgba(212, 175, 55, 0.5),
                     0 0 30px rgba(212, 175, 55, 0.3),
                     inset 0 0 15px rgba(0, 0, 0, 0.3);
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
     }
 
+    .music-btn:hover {
+        box-shadow: 0 6px 30px rgba(212, 175, 55, 0.7),
+                    0 0 50px rgba(212, 175, 55, 0.5);
+    }
+
+    .music-btn:active {
+        transform: scale(0.92);
+    }
+
+    /* 内圆 — 唱片中心黑点 */
     .music-btn::before {
         content: '';
         position: absolute;
-        width: 20px;
-        height: 20px;
         background: rgba(10, 10, 10, 0.9);
         border-radius: 50%;
         border: 2px solid rgba(212, 175, 55, 0.5);
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
     }
 
-    .music-btn::after {
+    /* 虚线唱纹 — 仅主按钮 */
+    .music-btn-play::after {
         content: '';
         position: absolute;
         width: 100%;
@@ -1000,36 +1020,79 @@
         border-radius: 50%;
         border: 2px dashed rgba(255, 255, 255, 0.3);
         animation: none;
+        pointer-events: none;
     }
 
-    .music-btn.playing {
+    /* ---- 主按钮（播放/暂停） ---- */
+    .music-btn-play {
+        width: 60px;
+        height: 60px;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        z-index: 3;
+    }
+
+    .music-btn-play::before {
+        width: 20px;
+        height: 20px;
+    }
+
+    .music-btn-play.playing {
         animation: rotate 3s linear infinite;
     }
 
-    .music-btn.playing::after {
+    .music-btn-play.playing::after {
         animation: rotate 8s linear infinite reverse;
     }
 
-    @keyframes rotate {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .music-btn:hover {
+    .music-btn-play:hover {
         transform: scale(1.1);
-        box-shadow: 0 6px 30px rgba(212, 175, 55, 0.7),
-                    0 0 50px rgba(212, 175, 55, 0.5);
     }
 
-    .music-btn:active {
-        transform: scale(0.95);
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
     }
 
-    /* 播放/暂停图标 */
+    /* ---- 切歌按钮（上一首 / 下一首） ---- */
+    .music-btn-prev,
+    .music-btn-next {
+        position: absolute;
+        width: 38px;
+        height: 38px;
+        top: 11px;             /* (60 - 38) / 2 — 与主按钮垂直居中 */
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        opacity: 0;
+        transform: scale(0.3);
+        pointer-events: none;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
+    }
+
+    .music-btn-prev::before,
+    .music-btn-next::before {
+        width: 12px;
+        height: 12px;
+        border-width: 1.5px;
+    }
+
+    .music-btn-prev  { right: 70px; }   /* 主按钮右侧 70px → 实际在其左侧 */
+    .music-btn-next  { right: 116px; }  /* 更左侧，排列: [prev] [next] [play] */
+
+    /* 悬浮展开 */
+    .music-player:hover .music-btn-prev,
+    .music-player:hover .music-btn-next {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+    }
+
+    /* 离开悬浮区域时有短暂延迟，防止误触收起 */
+    .music-player:not(:hover) .music-btn-prev,
+    .music-player:not(:hover) .music-btn-next {
+        transition-delay: 0.12s;
+    }
+
+    /* ---- 播放/暂停图标（主按钮） ---- */
     .music-icon {
         position: absolute;
         width: 0;
@@ -1041,15 +1104,17 @@
         top: 50%;
         transform: translate(-30%, -50%);
         transition: all 0.3s ease;
+        z-index: 1;
     }
 
-    .music-btn.paused .music-icon {
+    /* 暂停态：播放三角 + 两条竖线（由 ::before / ::after 拼成暂停图标） */
+    .music-btn-play.paused .music-icon {
         border-width: 8px 0 8px 14px;
         border-color: transparent transparent transparent rgba(10, 10, 10, 0.9);
         transform: translate(-30%, -50%);
     }
 
-    .music-btn.paused .music-icon::after {
+    .music-btn-play.paused .music-icon::after {
         content: '';
         position: absolute;
         left: 18px;
@@ -1060,7 +1125,7 @@
         border-radius: 1px;
     }
 
-    .music-btn.paused .music-icon::before {
+    .music-btn-play.paused .music-icon::before {
         content: '';
         position: absolute;
         left: 8px;
@@ -1071,7 +1136,33 @@
         border-radius: 1px;
     }
 
-    /* 音波动画 */
+    /* ---- 上一首 / 下一首 图标 ---- */
+    .music-icon-prev,
+    .music-icon-next {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        top: 50%;
+    }
+
+    /* 下一首 — 右指三角 */
+    .music-icon-next {
+        border-width: 6px 0 6px 10px;
+        border-color: transparent transparent transparent rgba(10, 10, 10, 0.9);
+        left: 50%;
+        transform: translate(-25%, -50%);
+    }
+
+    /* 上一首 — 左指三角 */
+    .music-icon-prev {
+        border-width: 6px 10px 6px 0;
+        border-color: transparent rgba(10, 10, 10, 0.9) transparent transparent;
+        left: 50%;
+        transform: translate(-75%, -50%);
+    }
+
+    /* ---- 音波动画（仅主按钮） ---- */
     .music-wave {
         position: absolute;
         width: 100%;
@@ -1079,17 +1170,18 @@
         border-radius: 50%;
         border: 2px solid var(--gold-primary);
         opacity: 0;
+        pointer-events: none;
     }
 
-    .music-btn.playing .music-wave {
+    .music-btn-play.playing .music-wave {
         animation: wavePulse 1.5s ease-out infinite;
     }
 
-    .music-btn.playing .music-wave:nth-child(2) {
+    .music-btn-play.playing .music-wave:nth-child(2) {
         animation-delay: 0.5s;
     }
 
-    .music-btn.playing .music-wave:nth-child(3) {
+    .music-btn-play.playing .music-wave:nth-child(3) {
         animation-delay: 1s;
     }
 
@@ -1104,20 +1196,59 @@
         }
     }
 
+    /* ---- 移动端适配 ---- */
     @media (max-width: 600px) {
         .music-player {
             bottom: 20px;
             right: 20px;
         }
 
-        .music-btn {
+        .music-player::before {
+            left: -110px;
+        }
+
+        .music-btn-play {
             width: 50px;
             height: 50px;
         }
 
-        .music-btn::before {
+        .music-btn-play::before {
             width: 16px;
             height: 16px;
+        }
+
+        .music-btn-prev,
+        .music-btn-next {
+            width: 34px;
+            height: 34px;
+            top: 8px;              /* (50 - 34) / 2 */
+        }
+
+        .music-btn-prev::before,
+        .music-btn-next::before {
+            width: 10px;
+            height: 10px;
+        }
+
+        .music-btn-prev  { right: 62px; }
+        .music-btn-next  { right: 104px; }
+
+        /* 移动端播放中时保持按钮可见 */
+        .music-player.playing .music-btn-prev,
+        .music-player.playing .music-btn-next {
+            opacity: 0.7;
+            transform: scale(0.85);
+            pointer-events: auto;
+        }
+    }
+
+    /* 纯触摸设备（无 hover 能力）：播放中按钮始终可见 */
+    @media (hover: none) {
+        .music-player.playing .music-btn-prev,
+        .music-player.playing .music-btn-next {
+            opacity: 0.65;
+            transform: scale(0.8);
+            pointer-events: auto;
         }
     }
 

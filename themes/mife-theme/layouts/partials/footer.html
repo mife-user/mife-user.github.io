@@ -7,25 +7,115 @@
 </footer>
 
 <!-- 音乐播放器 -->
-<div class="music-player">
-    <button class="music-btn paused" id="musicBtn" aria-label="播放音乐">
+{{- $audioDir := "static/audio" -}}
+{{- $playlistData := slice -}}
+{{- if fileExists $audioDir -}}
+  {{- range readDir $audioDir -}}
+    {{- $name := .Name -}}
+    {{- $lowerExt := path.Ext $name | lower -}}
+    {{- if or (eq $lowerExt ".mp3") (eq $lowerExt ".ogg") (eq $lowerExt ".wav") (eq $lowerExt ".flac") (eq $lowerExt ".m4a") -}}
+      {{- $title := strings.TrimSuffix (path.Ext $name) $name -}}
+      {{- $entry := dict "title" $title "src" (printf "/audio/%s" $name) -}}
+      {{- $playlistData = $playlistData | append $entry -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+<div class="music-player" id="musicPlayer">
+    <button class="music-btn music-btn-prev" id="prevBtn" aria-label="上一首" title="上一首">
+        <div class="music-icon-prev"></div>
+    </button>
+    <button class="music-btn music-btn-play paused" id="musicBtn" aria-label="播放音乐" title="播放/暂停">
         <div class="music-wave"></div>
         <div class="music-wave"></div>
         <div class="music-wave"></div>
         <div class="music-icon"></div>
     </button>
+    <button class="music-btn music-btn-next" id="nextBtn" aria-label="下一首" title="下一首">
+        <div class="music-icon-next"></div>
+    </button>
 </div>
 
 <!-- 音频元素 -->
-<audio id="bgMusic" loop>
-    <source src="/audio/削除 Nikki Simmons - Destr0yer.mp3" type="audio/mpeg">
-</audio>
+{{- if gt (len $playlistData) 0 -}}
+<audio id="bgMusic" preload="auto" src="{{ (index $playlistData 0).src | safeHTMLAttr }}"></audio>
+{{- else -}}
+<audio id="bgMusic" preload="auto"></audio>
+{{- end -}}
 
 <script>
     let currentLang = 'zh';
+    // ========== 音乐播放器 ==========
+    // 播放列表 — Hugo 构建时自动扫描 static/audio/ 目录生成
+    const playlist = {{ $playlistData | jsonify | safeJS }};
+    let currentTrack = 0;
     let isPlaying = false;
-    const musicBtn = document.getElementById('musicBtn');
-    const bgMusic = document.getElementById('bgMusic');
+
+    const musicPlayer = document.getElementById('musicPlayer');
+    const musicBtn    = document.getElementById('musicBtn');
+    const prevBtn     = document.getElementById('prevBtn');
+    const nextBtn     = document.getElementById('nextBtn');
+    const bgMusic     = document.getElementById('bgMusic');
+
+    // 无曲目时隐藏整个播放器
+    if (!playlist.length) {
+        musicPlayer.style.display = 'none';
+    }
+
+    function updateTrackSrc() {
+        bgMusic.src = playlist[currentTrack].src;
+        bgMusic.load();
+    }
+
+    function toggleMusic() {
+        if (isPlaying) {
+            bgMusic.pause();
+            musicBtn.classList.add('paused');
+            musicBtn.classList.remove('playing');
+            musicPlayer.classList.remove('playing');
+        } else {
+            bgMusic.play().catch(function(){});
+            musicBtn.classList.remove('paused');
+            musicBtn.classList.add('playing');
+            musicPlayer.classList.add('playing');
+        }
+        isPlaying = !isPlaying;
+    }
+
+    function nextTrack() {
+        if (!playlist.length) return;
+        currentTrack = (currentTrack + 1) % playlist.length;
+        updateTrackSrc();
+        if (isPlaying) bgMusic.play().catch(function(){});
+    }
+
+    function prevTrack() {
+        if (!playlist.length) return;
+        currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
+        updateTrackSrc();
+        if (isPlaying) bgMusic.play().catch(function(){});
+    }
+
+    musicBtn.addEventListener('click', toggleMusic);
+    prevBtn.addEventListener('click', function(e) { e.stopPropagation(); prevTrack(); });
+    nextBtn.addEventListener('click', function(e) { e.stopPropagation(); nextTrack(); });
+
+    // 曲目结束时自动播放下一首
+    bgMusic.addEventListener('ended', nextTrack);
+
+    // 页面加载完成后尝试自动播放
+    window.addEventListener('load', function() {
+        if (!playlist.length) return;
+        bgMusic.play().then(function() {
+            isPlaying = true;
+            musicBtn.classList.remove('paused');
+            musicBtn.classList.add('playing');
+            musicPlayer.classList.add('playing');
+        }).catch(function() {
+            isPlaying = false;
+            musicBtn.classList.add('paused');
+            musicBtn.classList.remove('playing');
+        });
+    });
 
     function toggleLanguage() {
         currentLang = currentLang === 'zh' ? 'en' : 'zh';
@@ -41,44 +131,6 @@
         // 通知分页组件语言已切换
         document.dispatchEvent(new CustomEvent('languagechange', { detail: { lang: currentLang } }));
     }
-
-    // 音乐播放控制
-    function toggleMusic() {
-        if (isPlaying) {
-            bgMusic.pause();
-            musicBtn.classList.add('paused');
-            musicBtn.classList.remove('playing');
-        } else {
-            bgMusic.play();
-            musicBtn.classList.remove('paused');
-            musicBtn.classList.add('playing');
-        }
-        isPlaying = !isPlaying;
-    }
-
-    musicBtn.addEventListener('click', toggleMusic);
-
-    // 页面加载完成后自动播放
-    window.addEventListener('load', function() {
-        // 尝试自动播放
-        bgMusic.play().then(() => {
-            isPlaying = true;
-            musicBtn.classList.remove('paused');
-            musicBtn.classList.add('playing');
-        }).catch(() => {
-            // 如果自动播放被阻止，保持暂停状态
-            isPlaying = false;
-            musicBtn.classList.add('paused');
-            musicBtn.classList.remove('playing');
-        });
-    });
-
-    // 音频播放结束时重置状态
-    bgMusic.addEventListener('ended', function() {
-        isPlaying = false;
-        musicBtn.classList.add('paused');
-        musicBtn.classList.remove('playing');
-    });
 
     // 搜索功能
     const searchOverlay = document.getElementById('search-overlay');
