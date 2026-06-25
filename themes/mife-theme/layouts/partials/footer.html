@@ -99,6 +99,24 @@
     prevBtn.addEventListener('click', function(e) { e.stopPropagation(); prevTrack(); });
     nextBtn.addEventListener('click', function(e) { e.stopPropagation(); nextTrack(); });
 
+    // ========== 悬浮展开控制 ==========
+    // 用 JS 管理展开/收起（比 CSS :hover 更稳定，避免容器位移时光标脱靶）
+    var expandTimer = null;
+    musicPlayer.addEventListener('mouseenter', function() {
+        clearTimeout(expandTimer);
+        musicPlayer.classList.add('expanded');
+    });
+    musicPlayer.addEventListener('mouseleave', function() {
+        expandTimer = setTimeout(function() {
+            musicPlayer.classList.remove('expanded');
+        }, 250);
+    });
+    // 触摸设备：播放中时保持可见（CSS 处理），点击播放按钮也触发展开
+    musicBtn.addEventListener('mouseenter', function() {
+        clearTimeout(expandTimer);
+        musicPlayer.classList.add('expanded');
+    });
+
     // 曲目结束时自动播放下一首
     bgMusic.addEventListener('ended', nextTrack);
 
