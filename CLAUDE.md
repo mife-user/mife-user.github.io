@@ -54,3 +54,17 @@ archetypes/            # Hugo content templates
 - **Drafts**: `draft: true` content is hidden in production builds. Set to `false` to publish.
 - **Obsidian**: `.obsidian/` config exists under `content/` — the author uses Obsidian to edit content.
 - **Site config**: `hugo.toml` — baseURL, params (author, social links, avatar/background paths), menu navigation.
+
+## Writing style for posts
+
+All blog posts must follow these conventions:
+
+- **Professional programmer perspective**: Write as an experienced developer explaining to peers. No "大家好啊今天我们来学习" openings.
+- **No AI-isms**: Avoid phrases like "总的来说", "此外", "值得注意的是", "正如我们所见", "总而言之", "首先...其次...最后" (use direct language instead), "在当今这个时代".
+- **No excessive rhetoric**: Skip flowery descriptions, metaphors that don't add technical clarity, and filler paragraphs. Every sentence should carry information.
+- **Code-driven**: Show code first, explain after. Readers learn by reading code, not prose. Every concept must have a concrete, runnable example.
+- **Detail matters**: Cover edge cases, error handling, performance implications, and gotchas. A good post anticipates what the reader will trip over.
+- **Pitfall callouts**: Use `> ⚠️` blockquotes for common mistakes and unexpected behavior.
+- **Real-world scenarios**: All examples should come from actual production use cases, not contrived "foo/bar" examples (unless the abstraction is genuinely generic).
+- **Chinese with technical terms in English**: Write in Chinese but keep Go keywords, API names, error messages, and technical terms in their original English form.
+- **Structure**: `##` for major sections, `###` for subsections. Each major section should be self-contained enough to be useful if read standalone.
