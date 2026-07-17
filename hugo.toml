@@ -43,3 +43,7 @@ theme = 'mife-theme'
     name = '友链'
     url = '/links/'
     weight = 4
+  [[menu.main]]
+    name = '收藏'
+    url = '/favorites/'
+    weight = 5
