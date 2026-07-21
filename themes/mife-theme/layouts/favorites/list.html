@@ -1,0 +1,164 @@
+{{ define "main" }}
+<section class="section fav-page">
+    <header class="fav-header">
+        <h2 class="section-title fav-main-title" data-zh="收藏夹" data-en="FAVORITES">
+            <span class="fav-title-icon">📌</span>
+            <span>收藏夹</span>
+        </h2>
+        <p class="fav-subtitle" data-zh="常用的工具、文章、视频，集中收纳" data-en="Curated tools, articles & videos">常用的工具、文章、视频，集中收纳</p>
+    </header>
+
+    <!-- 分类标签切换 -->
+    {{ $data := hugo.Data.favorites }}
+    <nav class="fav-tabs" role="tablist">
+        {{ range $index, $cat := $data }}
+        <button class="fav-tab-btn{{ if eq $index 0 }} active{{ end }}"
+                role="tab"
+                aria-selected="{{ if eq $index 0 }}true{{ else }}false{{ end }}"
+                data-cat="{{ $index }}"
+                data-zh="{{ $cat.nameZh }}"
+                data-en="{{ $cat.nameEn }}">
+            <span class="fav-tab-icon">{{ $cat.icon }}</span>
+            <span class="fav-tab-label">{{ $cat.nameZh }}</span>
+            <span class="fav-tab-count">{{ len $cat.items }}</span>
+        </button>
+        {{ end }}
+        <!-- 滑动指示器 -->
+        <div class="fav-tab-indicator"></div>
+    </nav>
+
+    <!-- 分类内容区 -->
+    {{ $data := hugo.Data.favorites }}
+    {{ range $index, $cat := $data }}
+    <div class="fav-category{{ if eq $index 0 }} active{{ end }}"
+         id="fav-cat-{{ $index }}"
+         role="tabpanel"
+         {{ if gt $index 0 }} hidden{{ end }}>
+        <div class="fav-cat-header">
+            <h3 class="fav-cat-title">
+                <span class="fav-cat-icon">{{ $cat.icon }}</span>
+                <span data-zh="{{ $cat.nameZh }}" data-en="{{ $cat.nameEn }}">{{ $cat.nameZh }}</span>
+                <span class="fav-count">{{ len $cat.items }}</span>
+            </h3>
+        </div>
+        <div class="fav-grid">
+            {{ range $itemIndex, $item := $cat.items }}
+            <a href="{{ .url }}" target="_blank" rel="noopener" class="fav-item" style="--fav-item-delay: {{ mul $itemIndex 50 }}ms">
+                <span class="fav-item-icon">{{ .icon }}</span>
+                <div class="fav-item-body">
+                    <span class="fav-item-title">{{ .title }}</span>
+                    {{ if .desc }}<span class="fav-item-desc">{{ .desc }}</span>{{ end }}
+                </div>
+                <span class="fav-item-arrow">↗</span>
+            </a>
+            {{ end }}
+        </div>
+    </div>
+    {{ end }}
+
+    <!-- 空状态 -->
+    {{ if not $data }}
+    <div class="fav-empty">
+        <span class="fav-empty-icon">📭</span>
+        <p class="fav-empty-text" data-zh="还没有收藏内容，快去添加吧！" data-en="No favorites yet. Start collecting!">还没有收藏内容，快去添加吧！</p>
+    </div>
+    {{ end }}
+</section>
+
+<script>
+(function() {
+    var tabs = document.querySelectorAll('.fav-tab-btn');
+    var panels = document.querySelectorAll('.fav-category');
+    var indicator = document.querySelector('.fav-tab-indicator');
+
+    /**
+     * 移动指示器到指定按钮下方
+     * @param {HTMLElement} btn
+     */
+    function moveIndicator(btn) {
+        if (!indicator || !btn) return;
+        var left = btn.offsetLeft;
+        var width = btn.offsetWidth;
+        indicator.style.transform = 'translateX(' + left + 'px)';
+        indicator.style.width = width + 'px';
+    }
+
+    /**
+     * 激活指定分类
+     * @param {number} catIndex
+     */
+    function activateTab(catIndex) {
+        var targetBtn = null;
+
+        tabs.forEach(function(tab) {
+            var isTarget = tab.getAttribute('data-cat') === String(catIndex);
+            tab.classList.toggle('active', isTarget);
+            tab.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+            if (isTarget) targetBtn = tab;
+        });
+
+        panels.forEach(function(panel) {
+            var panelId = panel.id.replace('fav-cat-', '');
+            var isTarget = panelId === String(catIndex);
+            if (isTarget) {
+                panel.classList.add('active');
+                panel.removeAttribute('hidden');
+                var items = panel.querySelectorAll('.fav-item');
+                items.forEach(function(item) {
+                    item.classList.add('fav-item--visible');
+                });
+            } else {
+                panel.classList.remove('active');
+                panel.setAttribute('hidden', '');
+                var items = panel.querySelectorAll('.fav-item');
+                items.forEach(function(item) {
+                    item.classList.remove('fav-item--visible');
+                });
+            }
+        });
+
+        moveIndicator(targetBtn);
+    }
+
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var catIndex = this.getAttribute('data-cat');
+            activateTab(parseInt(catIndex));
+        });
+    });
+
+    // 初始化指示器位置
+    var activeTab = document.querySelector('.fav-tab-btn.active');
+    if (activeTab) {
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                moveIndicator(activeTab);
+            });
+        });
+    }
+
+    // 窗口大小变化时重新计算指示器位置
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            var currentActive = document.querySelector('.fav-tab-btn.active');
+            moveIndicator(currentActive);
+        }, 150);
+    });
+
+    // 初始显示的分类卡片入场动画
+    var initialPanel = document.querySelector('.fav-category.active');
+    if (initialPanel) {
+        var items = initialPanel.querySelectorAll('.fav-item');
+        requestAnimationFrame(function() {
+            items.forEach(function(item, i) {
+                setTimeout(function() {
+                    item.classList.add('fav-item--visible');
+                }, i * 50);
+            });
+        });
+    }
+})();
+</script>
+{{ end }}

@@ -1,0 +1,74 @@
+[
+  {
+    "category": "articles",
+    "nameZh": "收藏文章",
+    "nameEn": "Articles",
+    "icon": "📄",
+    "items": [
+      {
+        "title": "Effective Go",
+        "url": "https://go.dev/doc/effective_go",
+        "desc": "Go 官方编写的 Go 语言最佳实践指南，每个 Gopher 必读。",
+        "icon": "📝"
+      },
+      {
+        "title": "Rust 官方学习资源",
+        "url": "https://www.rust-lang.org/learn",
+        "desc": "Rust 官方提供的学习路径：The Book、Rust by Example 等。",
+        "icon": "🦀"
+      },
+      {
+        "title": "Kubernetes 官方文档",
+        "url": "https://kubernetes.io/docs/home/",
+        "desc": "K8s 官方文档，从入门到集群管理全覆盖。",
+        "icon": "☸️"
+      }
+    ]
+  },
+  {
+    "category": "websites",
+    "nameZh": "收藏网站",
+    "nameEn": "Websites",
+    "icon": "🌐",
+    "items": [
+      {
+        "title": "GitHub",
+        "url": "https://github.com",
+        "desc": "全球最大的代码托管平台，开源项目的聚集地。",
+        "icon": "🐙"
+      },
+      {
+        "title": "crates.io",
+        "url": "https://crates.io",
+        "desc": "Rust 包注册中心，搜索和发布 Rust crate。",
+        "icon": "📦"
+      },
+      {
+        "title": "pkg.go.dev",
+        "url": "https://pkg.go.dev",
+        "desc": "Go 包文档中心，查询任何 Go 模块的 API 文档。",
+        "icon": "🔍"
+      }
+    ]
+  },
+  {
+    "category": "videos",
+    "nameZh": "收藏视频",
+    "nameEn": "Videos",
+    "icon": "🎬",
+    "items": [
+      {
+        "title": "【看图读懂 Protobuf：从「.proto」到「跨语言通信」】",
+        "url": "https://www.bilibili.com/video/BV1MBMM6ZEdM/?share_source=copy_web&vd_source=fede6b7cbc276e206b4820d9bc3249aa",
+        "desc": "",
+        "icon": "▶️"
+      },
+      {
+        "title": "面试官：说说GC原理？我掏出这张图，他沉默了……",
+        "url": "https://www.bilibili.com/video/BV1abMb6sECt/?share_source=copy_web&vd_source=fede6b7cbc276e206b4820d9bc3249aa",
+        "desc": "",
+        "icon": "▶️"
+      }
+    ]
+  }
+]
