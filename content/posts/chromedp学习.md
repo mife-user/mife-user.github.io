@@ -1,8 +1,8 @@
 ---
 title: 'Chromedp学习'
 date: 2026-07-21T20:40:46+08:00
-draft: true
-tags: ["标签 1", "标签 2"]
+draft: false
+tags: ["chromedp", "web"]
 ---
 
 # 前言
