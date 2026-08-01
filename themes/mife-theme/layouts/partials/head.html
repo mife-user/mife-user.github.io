@@ -259,6 +259,7 @@
     }
 
     .social-links a, .btn {
+        display: inline-block;
         padding: 0.8rem 1.8rem;
         border: 1px solid var(--border-color);
         border-radius: 30px;
@@ -1450,100 +1451,280 @@
     }
 
     /* 友情链接样式 */
-    .links-grid {
+    /* 友情链接页面 — 数据驱动（data/links.json）+ 磁吸卡片 */
+    .fl-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+        animation: favFadeInUp 0.6s ease both;
+    }
+    .fl-main-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.6rem;
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .fl-title-icon {
+        display: inline-block;
+        animation: favFloat 3s ease-in-out infinite;
+        font-size: 2rem;
+    }
+    .fl-subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        letter-spacing: 0.5px;
+    }
+
+    .fl-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 2rem;
         margin-bottom: 3rem;
+        perspective: 1200px;
     }
 
-    .user-card {
-        background: var(--bg-card);
+    /* 卡片容器 — JS 注入 --fl-rx/--fl-ry 实现 3D 倾斜 */
+    .fl-card {
+        position: relative;
+        border-radius: 16px;
+        transform: perspective(1000px) rotateX(var(--fl-rx, 0deg)) rotateY(var(--fl-ry, 0deg));
+        transition: transform 0.25s ease-out;
+        transform-style: preserve-3d;
+        opacity: 0;
+        translate: 0 24px;
+    }
+    .fl-card--visible {
+        opacity: 1;
+        translate: 0 0;
+        transition: transform 0.25s ease-out,
+                    opacity 0.55s ease var(--fl-delay, 0ms),
+                    translate 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) var(--fl-delay, 0ms);
+    }
+
+    /* 鼠标光斑 — 位置由 JS 注入 --fl-gx/--fl-gy */
+    .fl-card-glow {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background: radial-gradient(320px circle at var(--fl-gx, 50%) var(--fl-gy, 50%),
+                    rgba(212, 175, 55, 0.14), transparent 65%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: 1;
+    }
+    .fl-card:hover .fl-card-glow {
+        opacity: 1;
+    }
+
+    .fl-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background: linear-gradient(160deg, rgba(30, 30, 30, 0.85), rgba(16, 16, 16, 0.9));
         border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 2rem;
-        transition: all 0.4s ease;
-        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 2.4rem 1.6rem 1.8rem;
+        text-decoration: none;
+        color: inherit;
         position: relative;
         overflow: hidden;
-        text-align: center;
+        backdrop-filter: blur(10px);
+        height: 100%;
+        transition: border-color 0.35s ease, box-shadow 0.35s ease;
     }
 
-    .user-card::before {
+    /* 顶部流光金线 — 无限流动 */
+    .fl-link::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, var(--gold-light), var(--gold-primary));
+        height: 3px;
+        background: linear-gradient(90deg,
+            transparent, var(--gold-dark), var(--gold-light),
+            var(--gold-primary), var(--gold-light), var(--gold-dark), transparent);
+        background-size: 250% 100%;
         opacity: 0;
-        transition: opacity 0.4s ease;
+        transition: opacity 0.35s ease;
     }
-
-    .user-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        border-color: var(--gold-dark);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
-                    0 10px 30px rgba(212, 175, 55, 0.2);
-    }
-
-    .user-card:hover::before {
+    .fl-card:hover .fl-link::before {
         opacity: 1;
+        animation: flFlow 2.2s linear infinite;
+    }
+    @keyframes flFlow {
+        from { background-position: 0% 0; }
+        to   { background-position: 250% 0; }
     }
 
-    .user-link {
-        text-decoration: none;
-        color: inherit;
-        display: block;
-        transition: all 0.3s ease;
+    /* 光扫效果 */
+    .fl-link::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(105deg,
+            transparent 40%,
+            rgba(212, 175, 55, 0.05) 48%,
+            rgba(212, 175, 55, 0.09) 50%,
+            rgba(212, 175, 55, 0.05) 52%,
+            transparent 60%);
+        transition: left 0.7s ease;
+        pointer-events: none;
+    }
+    .fl-card:hover .fl-link::after {
+        left: 100%;
     }
 
-    .user-avatar {
-        width: 100px;
-        height: 100px;
+    .fl-card:hover .fl-link {
+        border-color: rgba(212, 175, 55, 0.5);
+        box-shadow: 0 24px 55px rgba(0, 0, 0, 0.65),
+                    0 0 30px rgba(212, 175, 55, 0.12),
+                    inset 0 0 0 1px rgba(212, 175, 55, 0.08);
+    }
+
+    /* 头像 + 旋转光环 */
+    .fl-avatar {
+        width: 96px;
+        height: 96px;
         border-radius: 50%;
-        margin: 0 auto 1.5rem;
-        overflow: hidden;
+        margin-bottom: 1.3rem;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         border: 3px solid var(--gold-primary);
         box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-        transition: all 0.4s ease;
+        overflow: hidden;
+        background: rgba(212, 175, 55, 0.06);
+        transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateZ(40px);
     }
-
-    .user-card:hover .user-avatar {
-        transform: scale(1.1) rotate(5deg);
-        border-color: var(--gold-light);
-        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
-    }
-
-    .avatar-img {
+    .fl-avatar-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.4s ease;
+        transition: transform 0.45s ease;
+    }
+    .fl-avatar-icon {
+        font-size: 2.2rem;
+        line-height: 1;
+    }
+    /* 旋转虚线光环 */
+    .fl-avatar-ring {
+        position: absolute;
+        inset: -9px;
+        border-radius: 50%;
+        border: 2px dashed rgba(212, 175, 55, 0.45);
+        animation: flSpin 14s linear infinite;
+        pointer-events: none;
+    }
+    @keyframes flSpin {
+        to { transform: rotate(360deg); }
+    }
+    .fl-card:hover .fl-avatar {
+        transform: translateZ(40px) scale(1.08) rotate(4deg);
+        border-color: var(--gold-light);
+        box-shadow: 0 8px 28px rgba(212, 175, 55, 0.55);
+    }
+    .fl-card:hover .fl-avatar-img {
+        transform: scale(1.15);
+    }
+    .fl-card:hover .fl-avatar-ring {
+        animation-duration: 4s;
+        border-color: rgba(244, 212, 106, 0.8);
     }
 
-    .user-card:hover .avatar-img {
-        transform: scale(1.2);
-    }
-
-    .user-name {
+    .fl-name {
         font-size: 1.2rem;
         font-weight: 600;
         color: var(--gold-primary);
-        margin-bottom: 0.8rem;
+        margin-bottom: 0.6rem;
         transition: color 0.3s ease;
+        transform: translateZ(30px);
     }
-
-    .user-card:hover .user-name {
+    .fl-card:hover .fl-name {
         color: var(--gold-light);
+        text-shadow: 0 0 18px rgba(244, 212, 106, 0.4);
     }
 
-    .user-bio {
+    .fl-bio {
         color: var(--text-secondary);
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         line-height: 1.6;
-        margin: 0;
+        margin: 0 0 1.1rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* 底部元信息：标签 + 域名 */
+    .fl-foot {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: auto;
+    }
+    .fl-tag {
+        font-size: 0.72rem;
+        background: rgba(212, 175, 55, 0.15);
+        color: var(--gold-primary);
+        padding: 0.12rem 0.6rem;
+        border-radius: 10px;
+        font-weight: 500;
+        border: 1px solid rgba(212, 175, 55, 0.25);
+    }
+    .fl-domain {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: 'SF Mono', 'Consolas', monospace;
+        letter-spacing: 0.3px;
+    }
+
+    /* 外链箭头 — 悬浮时从右上滑入 */
+    .fl-arrow {
+        position: absolute;
+        top: 1rem;
+        right: 1.1rem;
+        color: var(--gold-primary);
+        font-size: 0.95rem;
+        opacity: 0;
+        transform: translate(-8px, 8px);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
+    }
+    .fl-card:hover .fl-arrow {
+        opacity: 1;
+        transform: translate(0, 0);
+    }
+
+    /* 空状态 */
+    .fl-empty {
+        text-align: center;
+        padding: 4rem 2rem;
+        animation: favFadeInScale 0.5s ease both;
+    }
+    .fl-empty-icon {
+        font-size: 4rem;
+        display: block;
+        margin-bottom: 1rem;
+        animation: favFloat 3s ease-in-out infinite;
+    }
+    .fl-empty-text {
+        color: var(--text-muted);
+        font-size: 1rem;
+        letter-spacing: 0.5px;
     }
 
     .add-link-container {
@@ -2194,28 +2375,44 @@
         }
 
         /* 友情链接响应式 */
-        .links-grid {
+        .fl-grid {
             grid-template-columns: 1fr;
             gap: 1.5rem;
         }
 
-        .user-card {
-            padding: 1.5rem;
-            margin: 0 0.5rem;
+        .fl-link {
+            padding: 2rem 1.3rem 1.5rem;
         }
 
-        .user-avatar {
+        .fl-avatar {
             width: 80px;
             height: 80px;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1.1rem;
         }
 
-        .user-name {
+        .fl-avatar-icon {
+            font-size: 1.8rem;
+        }
+
+        .fl-name {
             font-size: 1.1rem;
         }
 
-        .user-bio {
-            font-size: 0.9rem;
+        .fl-bio {
+            font-size: 0.88rem;
+        }
+
+        .fl-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+        }
+
+        .fl-empty {
+            padding: 3rem 1rem;
+        }
+
+        .fl-empty-icon {
+            font-size: 3rem;
         }
 
         .add-link-btn {
@@ -2372,6 +2569,67 @@
         background: rgba(212, 175, 55, 0.55);
     }
 
+    /* ---- 金色漂浮粒子画布 ---- */
+    #gold-dust {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    /* ---- 卡片扫光 — 文章/项目/友链通用 ---- */
+    .post-card::after,
+    .project-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(105deg,
+            transparent 42%,
+            rgba(212, 175, 55, 0.04) 47%,
+            rgba(212, 175, 55, 0.08) 50%,
+            rgba(212, 175, 55, 0.04) 53%,
+            transparent 58%);
+        transition: left 0.7s ease;
+        pointer-events: none;
+    }
+    .post-card:hover::after,
+    .project-card:hover::after {
+        left: 100%;
+    }
+
+    /* ---- 标题金色流光 ---- */
+    .section-title {
+        background: linear-gradient(120deg,
+            var(--gold-primary) 0%, var(--gold-light) 40%,
+            #fff3c4 50%, var(--gold-light) 60%, var(--gold-primary) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: goldShimmer 7s linear infinite;
+    }
+
+    /* ---- 头像旋转光环 ---- */
+    .avatar::after {
+        content: '';
+        position: absolute;
+        inset: -12px;
+        border-radius: 50%;
+        border: 2px dashed rgba(212, 175, 55, 0.4);
+        animation: flSpin 20s linear infinite;
+        pointer-events: none;
+    }
+    .avatar:hover::after {
+        animation-duration: 6s;
+        border-color: rgba(244, 212, 106, 0.7);
+    }
+
     /* ---- 减少动态偏好 ---- */
     @media (prefers-reduced-motion: reduce) {
         .reveal {
@@ -2380,8 +2638,21 @@
             transition: none;
         }
         .hero h1,
-        .logo {
+        .logo,
+        .section-title {
             animation: none;
+        }
+        #gold-dust {
+            display: none;
+        }
+        .avatar::after,
+        .fl-avatar-ring {
+            animation: none;
+        }
+        .fl-card {
+            opacity: 1;
+            translate: none;
+            transform: none;
         }
     }
 </style>

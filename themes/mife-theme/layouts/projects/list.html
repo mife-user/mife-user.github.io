@@ -1,0 +1,24 @@
+{{ define "main" }}
+<section class="section list-page">
+    <h2 class="section-title" data-zh="项目" data-en="PROJECTS">项目</h2>
+    <div class="project-list">
+        {{ range where .Site.RegularPages "Section" "projects" }}
+        <article class="project-card">
+            <div class="project-meta">
+                <div class="project-date">{{ .Date.Format "2006-01-02" }}</div>
+                {{ with .Params.tags }}
+                <div class="project-tags">
+                    {{ range . }}
+                    <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}/" class="tag-link">{{ . }}</a>
+                    {{ end }}
+                </div>
+                {{ end }}
+            </div>
+            <h3 class="project-title">
+                <a href="{{ .Permalink }}">{{ .Title }}</a>
+            </h3>
+        </article>
+        {{ end }}
+    </div>
+</section>
+{{ end }}

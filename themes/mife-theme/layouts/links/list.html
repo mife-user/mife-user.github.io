@@ -1,38 +1,51 @@
 {{ define "main" }}
 <!-- 友链页面 -->
-<section class="section">
-    <h2 class="section-title" data-zh="友链" data-en="FRIEND LINKS">友链</h2>
-    
-    <!-- 链接列表 -->
-    <div class="links-grid">
-        <!-- 示例链接 -->
-        <div class="user-card">
-            <a href="https://example.com" target="_blank" class="user-link">
-                <div class="user-avatar">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=default%20user%20avatar%20portrait&image_size=square" alt="示例用户" class="avatar-img">
+<section class="section fl-page">
+    <header class="fl-header">
+        <h2 class="section-title fl-main-title" data-zh="友链" data-en="FRIEND LINKS">
+            <span class="fl-title-icon">🤝</span>
+            <span>友链</span>
+        </h2>
+        <p class="fl-subtitle" data-zh="同路人，一起前行" data-en="Companions on the journey">同路人，一起前行</p>
+    </header>
+
+    <!-- 链接列表 —— 数据来自 data/links.json -->
+    {{ $links := hugo.Data.links }}
+    <div class="fl-grid">
+        {{ range $index, $link := $links }}
+        <div class="fl-card" style="--fl-delay: {{ mul $index 80 }}ms">
+            <span class="fl-card-glow" aria-hidden="true"></span>
+            <a href="{{ $link.url }}" target="_blank" rel="noopener" class="fl-link">
+                <div class="fl-avatar">
+                    {{ if $link.avatar }}
+                    <img src="{{ $link.avatar }}" alt="{{ $link.name }}" class="fl-avatar-img" loading="lazy">
+                    {{ else }}
+                    <span class="fl-avatar-icon">{{ $link.icon | default "🔗" }}</span>
+                    {{ end }}
+                    <span class="fl-avatar-ring" aria-hidden="true"></span>
                 </div>
-                <h3 class="user-name">示例博客</h3>
-                <p class="user-bio">这是一个示例博客，展示友情链接的样式。</p>
+                <h3 class="fl-name">{{ $link.name }}</h3>
+                <p class="fl-bio">{{ $link.bio }}</p>
+                <div class="fl-foot">
+                    {{ if $link.tag }}<span class="fl-tag">{{ $link.tag }}</span>{{ end }}
+                    <span class="fl-domain">{{ (urls.Parse $link.url).Hostname }}</span>
+                </div>
+                <span class="fl-arrow">↗</span>
             </a>
         </div>
-        
-        <!-- 示例链接 2 -->
-        <div class="user-card">
-            <a href="https://example2.com" target="_blank" class="user-link">
-                <div class="user-avatar">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=default%20user%20avatar%20portrait%202&image_size=square" alt="示例用户2" class="avatar-img">
-                </div>
-                <h3 class="user-name">示例博客2</h3>
-                <p class="user-bio">这是另一个示例博客，展示友情链接的卡片式布局。</p>
-            </a>
-        </div>
-        
-        <!-- 更多链接可以在这里添加 -->
+        {{ end }}
     </div>
-    
+
+    {{ if not $links }}
+    <div class="fl-empty">
+        <span class="fl-empty-icon">🫧</span>
+        <p class="fl-empty-text" data-zh="还没有友链，快来交换一个吧！" data-en="No friend links yet. Be the first!">还没有友链，快来交换一个吧！</p>
+    </div>
+    {{ end }}
+
     <!-- 添加链接按钮 -->
     <div class="add-link-container">
-        <button class="btn add-link-btn" onclick="openAddLinkModal()" data-zh="添加链接" data-en="Add Link">添加链接</button>
+        <button class="btn add-link-btn" onclick="openAddLinkModal()" data-zh="交换友链" data-en="Exchange Link">交换友链</button>
     </div>
 </section>
 
@@ -57,6 +70,10 @@
                     <label for="blogDesc" data-zh="博客描述" data-en="Blog Description">博客描述</label>
                     <textarea id="blogDesc" rows="3" required></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="blogAvatar" data-zh="头像图片URL（选填）" data-en="Avatar Image URL (optional)">头像图片URL（选填）</label>
+                    <input type="url" id="blogAvatar" placeholder="https://...">
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn cancel-btn" onclick="closeAddLinkModal()" data-zh="取消" data-en="Cancel">取消</button>
                     <button type="submit" class="btn submit-btn" data-zh="提交" data-en="Submit">提交</button>
@@ -71,51 +88,112 @@
     function openAddLinkModal() {
         document.getElementById('addLinkModal').classList.add('active');
     }
-    
+
     // 关闭添加链接模态框
     function closeAddLinkModal() {
         document.getElementById('addLinkModal').classList.remove('active');
     }
-    
+
     // 提交表单
     document.getElementById('addLinkForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        // 获取表单数据
-        const blogName = document.getElementById('blogName').value.trim();
-        const blogUrl = document.getElementById('blogUrl').value.trim();
-        const blogDesc = document.getElementById('blogDesc').value.trim();
-        
-        // 验证输入
+
+        var blogName = document.getElementById('blogName').value.trim();
+        var blogUrl = document.getElementById('blogUrl').value.trim();
+        var blogDesc = document.getElementById('blogDesc').value.trim();
+
         if (!blogName || !blogUrl || !blogDesc) {
             alert('请填写所有必填字段');
             return;
         }
-        
-        // 验证URL格式
-        const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+
+        var urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
         if (!urlPattern.test(blogUrl)) {
             alert('请输入有效的URL');
             return;
         }
-        
-        // 构建邮件内容
-        const emailBody = `博客名称: ${blogName}\n博客链接: ${blogUrl}\n博客描述: ${blogDesc}`;
-        const emailSubject = '申请添加友链';
-        const emailTo = '{{ .Site.Params.email }}';
-        
-        // 打开邮件客户端
-        window.location.href = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-        
-        // 关闭模态框
+
+        var blogAvatar = document.getElementById('blogAvatar').value.trim();
+        if (blogAvatar && !urlPattern.test(blogAvatar)) {
+            alert('请输入有效的头像图片URL');
+            return;
+        }
+
+        var emailBody = '博客名称: ' + blogName + '\n博客链接: ' + blogUrl + '\n博客描述: ' + blogDesc;
+        if (blogAvatar) {
+            emailBody += '\n头像图片URL: ' + blogAvatar;
+        }
+        var emailSubject = '申请添加友链';
+        var emailTo = '{{ .Site.Params.email }}';
+
+        window.location.href = 'mailto:' + emailTo + '?subject=' + encodeURIComponent(emailSubject) + '&body=' + encodeURIComponent(emailBody);
+
         closeAddLinkModal();
     });
-    
+
     // 点击模态框背景关闭
     document.getElementById('addLinkModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeAddLinkModal();
         }
     });
+
+    // ---- 友链卡片交互：入场 + 3D 磁吸倾斜 + 光斑跟随 ----
+    (function() {
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var cards = document.querySelectorAll('.fl-card');
+
+        // 入场动画
+        if (reduceMotion) {
+            cards.forEach(function(card) { card.classList.add('fl-card--visible'); });
+        } else {
+            var io = 'IntersectionObserver' in window ? new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fl-card--visible');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 }) : null;
+
+            cards.forEach(function(card) {
+                if (io) io.observe(card);
+                else card.classList.add('fl-card--visible');
+            });
+
+            // 仅桌面端启用 3D 倾斜 + 光斑
+            var isFinePointer = window.matchMedia('(pointer: fine)').matches;
+            if (isFinePointer) {
+                cards.forEach(function(card) {
+                    var glow = card.querySelector('.fl-card-glow');
+                    var raf = null;
+
+                    card.addEventListener('mousemove', function(e) {
+                        if (raf) return;
+                        raf = requestAnimationFrame(function() {
+                            raf = null;
+                            var rect = card.getBoundingClientRect();
+                            var px = (e.clientX - rect.left) / rect.width;   // 0 ~ 1
+                            var py = (e.clientY - rect.top) / rect.height;   // 0 ~ 1
+                            var rx = (0.5 - py) * 10;  // 前后倾
+                            var ry = (px - 0.5) * 12;  // 左右倾
+                            card.style.setProperty('--fl-rx', rx.toFixed(2) + 'deg');
+                            card.style.setProperty('--fl-ry', ry.toFixed(2) + 'deg');
+                            if (glow) {
+                                glow.style.setProperty('--fl-gx', (px * 100).toFixed(1) + '%');
+                                glow.style.setProperty('--fl-gy', (py * 100).toFixed(1) + '%');
+                            }
+                        });
+                    });
+
+                    card.addEventListener('mouseleave', function() {
+                        if (raf) { cancelAnimationFrame(raf); raf = null; }
+                        card.style.setProperty('--fl-rx', '0deg');
+                        card.style.setProperty('--fl-ry', '0deg');
+                    });
+                });
+            }
+        }
+    })();
 </script>
 {{ end }}

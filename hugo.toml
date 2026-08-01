@@ -33,11 +33,11 @@ theme = 'mife-theme'
     weight = 1
   [[menu.main]]
     name = '文章'
-    url = '/#posts'
+    url = '/posts/'
     weight = 2
   [[menu.main]]
     name = '项目'
-    url = '/#projects'
+    url = '/projects/'
     weight = 3
   [[menu.main]]
     name = '友链'
