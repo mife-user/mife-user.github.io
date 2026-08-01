@@ -17,6 +17,9 @@
     {{ end }}
 </article>
 
+<!-- 回到顶部按钮 -->
+<button id="backToTop" class="back-to-top" type="button" aria-label="回到顶部" title="回到顶部" data-zh="回到顶部" data-en="Back to Top"></button>
+
 <style>
     .single-article {
         max-width: 900px;
@@ -474,6 +477,66 @@
         border-top: 1px solid var(--border-color);
     }
 
+    /* 回到顶部按钮 */
+    .back-to-top {
+        position: fixed;
+        right: 30px;
+        top: 100px; /* 固定于右上角，导航栏下方 */
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        background: rgba(18, 18, 18, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        cursor: pointer;
+        z-index: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: opacity 0.3s ease, transform 0.3s ease,
+                    border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .back-to-top.show {
+        opacity: 0.75;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .back-to-top:hover {
+        opacity: 1;
+        border-color: var(--gold-primary);
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.35);
+    }
+
+    /* 金色箭头（CSS 绘制，与主题图标风格一致） */
+    .back-to-top::before {
+        content: '';
+        width: 10px;
+        height: 10px;
+        border: solid var(--gold-primary);
+        border-width: 0 2px 2px 0;
+        transform: rotate(-135deg);
+        margin-top: 3px;
+    }
+
+    .back-to-top:hover::before {
+        border-color: var(--gold-light);
+    }
+
+    @media (max-width: 600px) {
+        .back-to-top {
+            right: 20px;
+            top: 80px; /* 导航栏下方 */
+            width: 40px;
+            height: 40px;
+        }
+    }
+
     /* 响应式优化 */
     @media (max-width: 768px) {
         .single-article {
@@ -573,4 +636,44 @@
         }
     }
 </style>
+
+<script>
+(function() {
+    var btn = document.getElementById('backToTop');
+    if (!btn) return;
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // 滚动超过 600px 才显示（rAF 节流）
+    var ticking = false;
+    function update() {
+        ticking = false;
+        btn.classList.toggle('show', window.scrollY > 600);
+    }
+    function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(update);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    update();
+
+    // 点击回到顶部（html 已设置 scroll-behavior: smooth）
+    btn.addEventListener('click', function() {
+        if (reduceMotion) {
+            window.scrollTo(0, 0);
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+
+    // 语言切换时同步 title / aria-label
+    document.addEventListener('languagechange', function(e) {
+        var zh = !e.detail || e.detail.lang !== 'en';
+        var label = zh ? btn.getAttribute('data-zh') : btn.getAttribute('data-en');
+        btn.setAttribute('aria-label', label);
+        btn.setAttribute('title', label);
+    });
+})();
+</script>
 {{ end }}

@@ -21,17 +21,35 @@
   {{- end -}}
 {{- end -}}
 <div class="music-player" id="musicPlayer">
-    <button class="music-btn music-btn-prev" id="prevBtn" aria-label="上一首" title="上一首">
-        <div class="music-icon-prev"></div>
-    </button>
-    <button class="music-btn music-btn-play paused" id="musicBtn" aria-label="播放音乐" title="播放/暂停">
-        <div class="music-wave"></div>
-        <div class="music-wave"></div>
-        <div class="music-wave"></div>
-        <div class="music-icon"></div>
-    </button>
-    <button class="music-btn music-btn-next" id="nextBtn" aria-label="下一首" title="下一首">
-        <div class="music-icon-next"></div>
+    <!-- 播放列表面板 -->
+    <div class="music-panel" id="musicPanel" aria-hidden="true">
+        <div class="music-panel-header">
+            <span class="music-panel-title" data-zh="播放列表" data-en="Playlist">播放列表</span>
+            <div class="music-panel-controls">
+                <button class="music-panel-btn music-ctrl-prev" id="prevBtn" aria-label="上一首" title="上一首"></button>
+                <button class="music-panel-btn music-ctrl-play" id="panelPlayBtn" aria-label="播放/暂停" title="播放/暂停"></button>
+                <button class="music-panel-btn music-ctrl-next" id="nextBtn" aria-label="下一首" title="下一首"></button>
+            </div>
+        </div>
+        <!-- 播放进度条 -->
+        <div class="music-progress">
+            <span class="music-time" id="musicCurTime">00:00</span>
+            <input type="range" class="music-seek" id="musicSeek" min="0" max="100" step="0.1" value="0" aria-label="播放进度" title="播放进度">
+            <span class="music-time" id="musicDurTime">00:00</span>
+        </div>
+        <ul class="music-list" id="musicList"></ul>
+    </div>
+    <!-- 音符主按钮 -->
+    <button class="music-note-btn paused" id="musicBtn" aria-label="播放列表" title="播放列表">
+        <svg class="music-note-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path>
+        </svg>
+        <span class="music-eq" aria-hidden="true">
+            <span class="eq-bar"></span>
+            <span class="eq-bar"></span>
+            <span class="eq-bar"></span>
+        </span>
+        <span class="music-note-ring" aria-hidden="true"></span>
     </button>
 </div>
 
@@ -52,69 +70,225 @@
 
     const musicPlayer = document.getElementById('musicPlayer');
     const musicBtn    = document.getElementById('musicBtn');
+    const musicPanel  = document.getElementById('musicPanel');
+    const musicList   = document.getElementById('musicList');
     const prevBtn     = document.getElementById('prevBtn');
     const nextBtn     = document.getElementById('nextBtn');
+    const panelPlayBtn = document.getElementById('panelPlayBtn');
     const bgMusic     = document.getElementById('bgMusic');
+    const musicSeek   = document.getElementById('musicSeek');
+    const musicCur    = document.getElementById('musicCurTime');
+    const musicDur    = document.getElementById('musicDurTime');
 
     // 无曲目时隐藏整个播放器
     if (!playlist.length) {
         musicPlayer.style.display = 'none';
     }
 
+    // 渲染播放列表（标题用 textContent 写入，避免文件名中的特殊字符被解析为 HTML）
+    function renderPlaylist() {
+        musicList.innerHTML = playlist.map(function(track, i) {
+            return '<li class="music-item' + (i === currentTrack ? ' active' : '') + '" data-index="' + i + '">' +
+                '<span class="music-item-eq" aria-hidden="true">' +
+                    '<span class="eq-bar"></span><span class="eq-bar"></span><span class="eq-bar"></span>' +
+                '</span>' +
+                '<span class="music-item-name"></span>' +
+            '</li>';
+        }).join('');
+        musicList.querySelectorAll('.music-item').forEach(function(item, i) {
+            item.querySelector('.music-item-name').textContent = playlist[i].title;
+        });
+    }
+
+    // 同步播放状态到所有 UI
+    function setPlayState(playing) {
+        isPlaying = playing;
+        musicBtn.classList.toggle('playing', playing);
+        musicBtn.classList.toggle('paused', !playing);
+        panelPlayBtn.classList.toggle('playing', playing);
+    }
+
     function updateTrackSrc() {
         bgMusic.src = playlist[currentTrack].src;
         bgMusic.load();
+        // 重置进度条
+        musicSeek.value = 0;
+        musicSeek.style.setProperty('--seek-pct', '0%');
+        musicCur.textContent = '00:00';
+        musicDur.textContent = '00:00';
+    }
+
+    function playTrack() {
+        bgMusic.play().catch(function(){});
+        setPlayState(true);
+    }
+
+    function pauseTrack() {
+        bgMusic.pause();
+        setPlayState(false);
     }
 
     function toggleMusic() {
-        if (isPlaying) {
-            bgMusic.pause();
-            musicBtn.classList.add('paused');
-            musicBtn.classList.remove('playing');
-            musicPlayer.classList.remove('playing');
-        } else {
-            bgMusic.play().catch(function(){});
-            musicBtn.classList.remove('paused');
-            musicBtn.classList.add('playing');
-            musicPlayer.classList.add('playing');
-        }
-        isPlaying = !isPlaying;
+        if (isPlaying) pauseTrack(); else playTrack();
+    }
+
+    function selectTrack(index) {
+        if (index < 0 || index >= playlist.length) return;
+        currentTrack = index;
+        updateTrackSrc();
+        playTrack();
+        syncActiveItem();
     }
 
     function nextTrack() {
         if (!playlist.length) return;
         currentTrack = (currentTrack + 1) % playlist.length;
         updateTrackSrc();
-        if (isPlaying) bgMusic.play().catch(function(){});
+        if (isPlaying) playTrack();
+        syncActiveItem();
     }
 
     function prevTrack() {
         if (!playlist.length) return;
         currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
         updateTrackSrc();
-        if (isPlaying) bgMusic.play().catch(function(){});
+        if (isPlaying) playTrack();
+        syncActiveItem();
     }
 
-    musicBtn.addEventListener('click', toggleMusic);
+    function syncActiveItem() {
+        var items = musicList.querySelectorAll('.music-item');
+        for (var i = 0; i < items.length; i++) {
+            items[i].classList.toggle('active', i === currentTrack);
+        }
+    }
+
+    // 面板开合
+    function openPanel() {
+        musicPanel.classList.add('open');
+        musicPanel.setAttribute('aria-hidden', 'false');
+        // 列表项错峰入场动画
+        var items = musicList.querySelectorAll('.music-item');
+        items.forEach(function(el, i) {
+            el.classList.remove('item-in');
+            void el.offsetWidth;
+            el.style.animationDelay = (i * 45) + 'ms';
+            el.classList.add('item-in');
+        });
+        setTimeout(function() {
+            items.forEach(function(el) {
+                el.classList.remove('item-in');
+                el.style.animationDelay = '';
+            });
+        }, 400 + items.length * 45 + 50);
+        // 当前曲目滚入视野
+        var active = musicList.querySelector('.music-item.active');
+        if (active) active.scrollIntoView({ block: 'nearest' });
+    }
+
+    function closePanel() {
+        musicPanel.classList.remove('open');
+        musicPanel.setAttribute('aria-hidden', 'true');
+    }
+
+    // 主按钮：桌面端悬停显现 / 移出消失；触摸设备回退为点击开合
+    var isTouch = window.matchMedia('(hover: none)').matches;
+    var hoverTimer = null;
+
+    function showPanel() {
+        clearTimeout(hoverTimer);
+        openPanel();
+    }
+
+    function hidePanelDelayed() {
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(function() {
+            // 拖拽进度条期间不收起，避免拖动中断
+            if (seeking) { hidePanelDelayed(); return; }
+            closePanel();
+        }, 250);
+    }
+
+    if (isTouch) {
+        musicBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (musicPanel.classList.contains('open')) {
+                closePanel();
+            } else {
+                openPanel();
+            }
+        });
+    } else {
+        musicPlayer.addEventListener('mouseenter', showPanel);
+        musicPlayer.addEventListener('mouseleave', hidePanelDelayed);
+    }
+
+    // 列表选择曲目
+    musicList.addEventListener('click', function(e) {
+        var item = e.target.closest('.music-item');
+        if (!item) return;
+        selectTrack(parseInt(item.getAttribute('data-index'), 10));
+    });
+
+    // 面板内控制
+    panelPlayBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleMusic();
+    });
     prevBtn.addEventListener('click', function(e) { e.stopPropagation(); prevTrack(); });
     nextBtn.addEventListener('click', function(e) { e.stopPropagation(); nextTrack(); });
 
-    // ========== 悬浮展开控制 ==========
-    // 用 JS 管理展开/收起（比 CSS :hover 更稳定，避免容器位移时光标脱靶）
-    var expandTimer = null;
-    musicPlayer.addEventListener('mouseenter', function() {
-        clearTimeout(expandTimer);
-        musicPlayer.classList.add('expanded');
+    // 点击面板外部 / ESC 收起
+    document.addEventListener('click', function(e) {
+        if (musicPanel.classList.contains('open') && !musicPlayer.contains(e.target)) {
+            closePanel();
+        }
     });
-    musicPlayer.addEventListener('mouseleave', function() {
-        expandTimer = setTimeout(function() {
-            musicPlayer.classList.remove('expanded');
-        }, 250);
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && musicPanel.classList.contains('open')) {
+            closePanel();
+        }
     });
-    // 触摸设备：播放中时保持可见（CSS 处理），点击播放按钮也触发展开
-    musicBtn.addEventListener('mouseenter', function() {
-        clearTimeout(expandTimer);
-        musicPlayer.classList.add('expanded');
+
+    // 进度条：同步播放进度 + 拖动跳转
+    var seeking = false;
+
+    function fmtTime(sec) {
+        if (!isFinite(sec) || sec < 0) sec = 0;
+        var m = Math.floor(sec / 60);
+        var s = Math.floor(sec % 60);
+        return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function updateSeekUI() {
+        var dur = bgMusic.duration;
+        var pct = (isFinite(dur) && dur > 0) ? (bgMusic.currentTime / dur) * 100 : 0;
+        musicSeek.style.setProperty('--seek-pct', pct + '%');
+        musicCur.textContent = fmtTime(bgMusic.currentTime);
+    }
+
+    bgMusic.addEventListener('loadedmetadata', function() {
+        if (isFinite(bgMusic.duration)) {
+            musicSeek.max = bgMusic.duration;
+            musicDur.textContent = fmtTime(bgMusic.duration);
+        }
+    });
+
+    bgMusic.addEventListener('timeupdate', function() {
+        if (seeking) return;
+        musicSeek.value = bgMusic.currentTime;
+        updateSeekUI();
+    });
+
+    // 拖拽中实时跳转，松开后恢复自动同步
+    musicSeek.addEventListener('input', function() {
+        seeking = true;
+        bgMusic.currentTime = parseFloat(musicSeek.value);
+        updateSeekUI();
+    });
+
+    musicSeek.addEventListener('change', function() {
+        seeking = false;
     });
 
     // 曲目结束时自动播放下一首
@@ -124,16 +298,13 @@
     window.addEventListener('load', function() {
         if (!playlist.length) return;
         bgMusic.play().then(function() {
-            isPlaying = true;
-            musicBtn.classList.remove('paused');
-            musicBtn.classList.add('playing');
-            musicPlayer.classList.add('playing');
+            setPlayState(true);
         }).catch(function() {
-            isPlaying = false;
-            musicBtn.classList.add('paused');
-            musicBtn.classList.remove('playing');
+            setPlayState(false);
         });
     });
+
+    renderPlaylist();
 
     function toggleLanguage() {
         currentLang = currentLang === 'zh' ? 'en' : 'zh';
