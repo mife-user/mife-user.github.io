@@ -2789,4 +2789,31 @@
             transform: none;
         }
     }
+
+    /* ---- Mermaid 图表 ---- */
+    .content pre.mermaid {
+        background: rgba(10, 10, 10, 0.9);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.2rem;
+        margin: 1.5rem 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        text-align: center;
+        line-height: 1.5;
+    }
+    .content pre.mermaid svg {
+        max-width: 100%;
+        height: auto;
+    }
+    .content pre.mermaid .error {
+        color: #ff6b6b;
+        text-align: left;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .content pre.mermaid:not(:has(svg)) {
+        color: var(--text-secondary);
+        text-align: left;
+    }
 </style>

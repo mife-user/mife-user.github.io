@@ -716,3 +716,89 @@
     rafId = requestAnimationFrame(tick);
 })();
 </script>
+
+<!-- Mermaid 图表渲染 -->
+<script>
+(function() {
+    var cdnUrl = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+    var localUrl = '{{ "/js/mermaid.min.js" | relURL }}';
+    var initialized = false;
+
+    function loadScript(src) {
+        return new Promise(function(resolve, reject) {
+            var s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = function() {
+                if (s.parentNode) s.parentNode.removeChild(s);
+                reject(new Error('failed to load: ' + src));
+            };
+            document.head.appendChild(s);
+        });
+    }
+
+    function renderAll() {
+        if (initialized || !window.mermaid) return;
+        initialized = true;
+        mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'loose',
+            theme: 'base',
+            themeVariables: {
+                // 全局背景与字体
+                background: 'transparent',
+                fontFamily: "'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Consolas, Monaco, 'Courier New', monospace",
+                fontSize: '14px',
+                // 核心黑金
+                primaryColor: '#1a1a1a',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#d4af37',
+                lineColor: '#f4d46a',
+                secondaryColor: '#121212',
+                tertiaryColor: '#0a0a0a',
+                nodeTextColor: '#ffffff',
+                titleColor: '#f4d46a',
+                // 边与子图
+                edgeLabelBackground: '#1a1a1a',
+                clusterBkg: 'rgba(18, 18, 18, 0.6)',
+                clusterBorder: '#aa8c2c',
+                // 时序图
+                actorBkg: '#1a1a1a',
+                actorBorder: '#d4af37',
+                actorTextColor: '#ffffff',
+                actorLineColor: '#aa8c2c',
+                signalColor: '#f4d46a',
+                signalTextColor: '#ffffff',
+                labelBoxBkgColor: '#1a1a1a',
+                labelBoxBorderColor: '#d4af37',
+                labelTextColor: '#ffffff',
+                loopTextColor: '#f4d46a',
+                noteBkgColor: 'rgba(212, 175, 55, 0.15)',
+                noteBorderColor: '#d4af37',
+                // ER 图
+                attributeBackgroundColorOdd: '#1a1a1a',
+                attributeBackgroundColorEven: '#121212',
+                entityStroke: '#d4af37',
+                // 甘特图
+                gridColor: '#262626',
+                todayLineColor: '#f4d46a',
+                sectionBkgColor: 'rgba(18, 18, 18, 0.6)',
+                altSectionBkgColor: 'rgba(10, 10, 10, 0.6)'
+            }
+        });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                mermaid.run({ querySelector: '.mermaid' });
+            });
+        } else {
+            mermaid.run({ querySelector: '.mermaid' });
+        }
+    }
+
+    // 优先 CDN，失败回退到本地 static/js/mermaid.min.js
+    loadScript(cdnUrl)
+        .catch(function() { return loadScript(localUrl); })
+        .then(renderAll)
+        .catch(function() { /* 两个源都失败时静默，不影响页面其余功能 */ });
+})();
+</script>
