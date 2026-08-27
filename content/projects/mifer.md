@@ -1,6 +1,7 @@
 ---
 title: Mifer — 基于 Eino 的 AI Agent 终端助手
 date: 2026-06-09T12:00:00+08:00
+lastmod: 2026-08-24T12:00:00+08:00
 draft: false
 tags: ["Go", "AI", "Eino", "Agent", "TUI", "LLM", "MCP", "RAG"]
 ---
@@ -9,336 +10,550 @@ tags: ["Go", "AI", "Eino", "Agent", "TUI", "LLM", "MCP", "RAG"]
 
 ## 前言
 
-Mifer 是一个基于字节跳动开源 [CloudWeGo Eino](https://github.com/cloudwego/eino) 框架构建的智能 AI Agent 桌面应用。它提供 CLI（TUI）+ HTTP 双模交互，支持多 LLM 后端、多 Agent 编排协作、流式对话、MCP 协议工具扩展、Skills 技能系统、RAG 检索增强、对话回退等能力。一句话定位：**可编程、可扩展的桌面级 AI 助手**。
+Mifer 是一个基于字节跳动开源 [CloudWeGo Eino](https://github.com/cloudwego/eino) 框架构建的智能 AI Agent 桌面应用。它提供 CLI（TUI）+ HTTP 双模交互，支持多 LLM 后端、配置驱动的多 Agent 协作、流式对话、工具调用确认、MCP 协议工具扩展、Skills 技能系统、RAG 检索增强、三层上下文压缩、文件快照与对话回退。一句话定位：**可编程、可扩展的桌面级 AI 助手**。
 
 **技术栈一览：**
 
 | 层级 | 技术选型 |
 |------|----------|
-| AI 编排 | CloudWeGo Eino v0.8 (ADK) |
-| LLM 后端 | OpenAI / Claude / Gemini / Ollama |
+| 语言 | Go 1.25 |
+| AI 编排 | CloudWeGo Eino v0.8 (ADK + Graph) |
+| LLM 后端 | OpenAI 兼容 / Claude / Gemini / Ollama（后端名称用户自定义） |
 | MCP 协议 | mcp-go v0.44 |
 | TUI 框架 | Bubble Tea + Bubbles (Elm 架构) |
 | 终端渲染 | Glamour (Markdown) + Lip Gloss (样式) |
 | HTTP 服务 | Gin v1.12 |
+| Web 搜索 | SearXNG / Bing API / DuckDuckGo |
 | 对话记忆 | 自建 JSONL 文件持久化 (零外部依赖) |
 | 向量存储 | Qdrant (gRPC) |
 | 嵌入模型 | Ollama (nomic-embed-text) |
-| 配置管理 | Viper (多环境 + 环境变量覆盖) |
-| 日志 | Zap + Lumberjack (日志轮转) |
+| 配置管理 | Viper (环境变量覆盖 + 热重载) |
+| 日志 | Zap + 自定义轮转 (按级别分文件) |
 | 认证 | JWT (golang-jwt/v5) |
-| CI/CD | GitHub Actions (多架构构建) |
+| CI/CD | GitHub Actions (Windows/Linux × amd64/arm64 四平台) |
 
 ---
 
 ## 一、项目架构 — 分层设计
 
 ```
-cmd/main/          → 程序入口，3 种运行模式：serve / chat / default
-cmd/bootstrap/     → 启动编排：配置 → 上下文 → 日志 → 路由 → CLI 初始化
+cmd/main/           → 程序入口，3 种运行模式：serve / chat / default
+cmd/bootstrap/      → 启动编排：配置 → 上下文(session id) → 日志 → 路由 → CLI
+cmd/mcp-demo/       → 内置 MCP Stdio 演示 Server (echo / get_time / calculator / random_number)
 
-internal/api/      → HTTP 接口层
-  ├── routes/      → 路由注册 + 热重载
-  ├── handler/     → AgentHandler / AdminHandler
-  ├── middlewares/  → JWT 认证 + CORS
-  └── dto/         → 请求/响应 DTO
+internal/api/       → HTTP 接口层
+  ├── routes/       → 路由注册 + 配置热重载（带回滚）
+  ├── handler/      → AgentHandler / ToolHandler
+  ├── middlewares/  → TraceID + CORS
+  └── dto/          → 请求/响应 DTO（request/response 按模块分子目录）
 
-internal/service/  → 业务逻辑层 (AgentService)
-internal/domain/   → 领域核心：AgentService / Agent 接口契约
+internal/service/   → 业务逻辑层 (agentservice / toolservice，1:1 委托 executor)
+internal/domain/    → 领域核心接口契约 (AgentService / Agent / ToolService)
 
-internal/ai/       → AI 核心 (无 HTTP 依赖，可独立使用)
-  ├── agent/       → Eino ADK 多 Agent 编排 (5 子 Agent + 1 Orchestrator)
-  ├── executor/    → adk.Runner 包装器 + Token 统计
-  ├── callback/    → 全局 Tool 回调处理器
-  ├── llm/         → 多后端 ChatModel 管理 (Registry 模式)
-  ├── memory/      → JSONL 对话记忆持久化 + 回退
-  ├── prompt/      → 系统提示词构建与管理
-  ├── rag/         → RAG 检索增强 (chunker / embedder / loader / vectorstore)
-  └── tools/       → Function Calling 工具定义 (含 MCP 适配层)
+internal/ai/        → AI 核心 (无 HTTP 依赖，可独立使用)
+  ├── agent/        → Eino 编排器 + 配置驱动自定义 Agent + PlanAgent + Graphs
+  ├── executor/     → adk.Runner 包装器 + Chat 编排 + Token 统计 + 快照调度
+  ├── callback/     → per-invocation Tool 回调处理器
+  ├── llm/          → 多后端 ChatModel 管理 (Registry 模式)
+  ├── memory/       → JSONL 对话记忆持久化 + 回退 + 重命名
+  ├── prompt/       → Prompty：MIFER.md 拼接 + ChatTemplate 模板
+  ├── rag/          → RAG 检索增强 (chunker / embedder / loader / vectorstore)
+  ├── confirm/      → 工具调用确认子系统 (Actor Store + Middleware)
+  ├── compressor/   → 三层上下文压缩
+  ├── offload/      → 大体积工具结果卸载存储
+  └── tools/        → Function Calling 工具实现 + 错误/确认/持久化中间件
 
-cli/               → CLI 客户端
-  ├── client/      → HTTP API 调用 (chat / memory / reback / mcp / skill / plan)
-  ├── render/      → Glamour Markdown 渲染 + Lip Gloss 样式
-  └── tui/         → Bubble Tea TUI 界面 (Init/Update/View)
+cli/                → CLI 客户端（仅依赖 HTTP API，不 import internal/）
+  ├── client/       → HTTP API 调用 (chat / memory / reback / mcp / skill / plan ...)
+  ├── render/       → Glamour Markdown 渲染 + Lip Gloss 样式
+  └── tui/          → Bubble Tea TUI 界面 (Init/Update/View)
 
-pkg/               → 公共基础设施
-  ├── conf/        → Viper 配置管理
-  ├── logger/      → Zap 结构化日志
-  ├── mcp/         → MCP 协议支持 (Manager + Adapter + Status)
-  ├── skill/       → Skills 技能系统 (Manager + Tool + AgentHub)
-  ├── sse/         → SSE 流式响应工具
-  ├── task/        → 异步任务管理
-  └── qdrant/      → Qdrant gRPC 客户端
+pkg/                → 公共基础设施（不依赖 internal/）
+  ├── conf/         → Viper 配置管理（首次运行自动生成带注释的默认配置）
+  ├── logger/       → Zap 结构化日志（TraceID + 按大小轮转）
+  ├── mcp/          → MCP 协议支持 (Manager + Adapter + Status)
+  ├── skill/        → Skills 技能系统 (Manager + Tool + AgentHub)
+  ├── sse/          → SSE 写入器（单 goroutine 串行化 + 心跳保活）
+  ├── snapshot/     → 文件快照（内容寻址 + 增量变更日志）
+  └── ...           → auth / errorer / res / task / utils / exc / qdrant / cache
 
-config/            → YAML 配置文件 (首次运行自动生成)
+config/             → YAML 配置文件（首次运行自动生成）
 ```
 
-**依赖方向**：`cmd` → `api` → `service` → `ai` → `pkg`，每层只依赖下层，`pkg` 完全不依赖 `internal`。
+**依赖方向**：`cmd` → `api` → `service` → `ai` → `pkg`，每层只依赖下层，`pkg` 完全不依赖 `internal`。CLI 通过 HTTP + SSE 与服务端通信，本身不 import 任何 `internal/` 包。
 
 ---
 
 ## 二、核心设计决策
 
-### 2.1 为什么自建 JSONL 记忆层，而不是用 Eino 自带 Memory？
+### 2.1 为什么自建 JSONL 记忆层？
 
-Eino ADK 自带内存记忆，但它绑定于进程生命周期，重启即丢失。Mifer 自建 JSONL 文件记忆层：
+Eino ADK 自带的内存记忆绑定于进程生命周期，重启即丢失。Mifer 自建 JSONL 文件记忆层：
 
 ```go
 // memory/save.go — 增量追加写入，锁保护并发
 func (m *Memory) Save() error {
     m.mu.Lock()
     defer m.mu.Unlock()
-    // 只写入未持久化的新消息 (savedCount 之后)
-    newMsgs := m.Messages[m.savedCount:]
+    newMsgs := m.messages[m.savedCount:] // 只写未持久化的新消息
     f, _ := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
     for _, msg := range newMsgs {
         line, _ := json.Marshal(msg)
         f.Write(line)
         f.Write([]byte("\n"))
     }
-    m.savedCount = len(m.Messages)
+    m.savedCount = len(m.messages)
 }
 ```
 
-设计要点：
-- **增量追加**：只写新消息，不重写整个文件
-- **锁保护**：`sync.Mutex` 防止并发写入混乱
-- **会话隔离**：基于 workdir 哈希生成目录名，不同项目对话互不干扰
-- **切换/回退**：支持 `/excmem <id>` 随时切换，支持 `/reback <index>` 回退到历史任意轮次
+围绕这个基础能力，Memory 还提供了一整套会话操作：
 
-### 2.2 为什么 LLM 后端用 Registry 模式？
+- **原子替换** — `ReplaceMessages()` 全量重写文件，供上下文压缩使用
+- **会话切换** — `SwitchSession()` 先持久化当前会话再加载目标会话，保证切换原子性
+- **对话回退** — `Reback(index)` 按 User 消息定位轮次，截断内存并覆盖重写 JSONL
+- **自动重命名** — 首轮对话结束用首条用户消息前缀（20 字符净化）作为会话名，同时重命名 `.jsonl` 和 `_snapshots/` 目录，失败回滚
+- **工具记录持久化** — `AppendToolExchange()` 把 ToolCall + ToolResult 写入历史，压缩后 LLM 仍能看到完整调用轨迹
 
-项目需要同时接入多个模型（日常用 DeepSeek，复杂任务用 Claude，本地测试用 Ollama），各提供商的 ChatModel 创建方式不同。
+存储路径按 `memory/{workdir_basename}/{sessionID}.jsonl` 隔离，不同项目、不同会话互不干扰。
+
+### 2.2 LLM 后端 Registry：用户命名 + agent_backends 映射
+
+各提供商的 ChatModel 创建方式不同，且项目需要同时接入多个模型。Registry 模式把这件事拆成两层：
 
 ```go
-// llm/providers.go — 函数表模式注册
-var providerInitMap = map[string]func(context.Context, conf.BackendConfig) (model.BaseChatModel, error){
-    "openai": initOpenAIModel,
-    "claude": initClaudeModel,
-    "gemini": initGeminiModel,
-    "ollama": initOllamaModel,
+// llm/type.go — provider 函数表注册
+func NewRegistry() *Registry {
+    r.RegisterProvider(&openAIProvider{})
+    r.RegisterProvider(&claudeProvider{})
+    r.RegisterProvider(&geminiProvider{})
+    r.RegisterProvider(&ollamaProvider{})
 }
 ```
 
-Registry 对外暴露 `Get(name)` 方法，缺失时自动 fallback 到 default。业务代码切换模型不改一行代码。
+配置中 `ai.backends` 下的键名完全由用户定义（如 `main`、`fast-model`），`type` 字段区分 `chat` / `embedding`。Agent 与后端的映射由 `ai.agent_backends` 决定：
 
-### 2.3 三级模型分配策略
+```go
+// agent/init.go — 回退链：配置映射 → 第一个注册后端 → nil
+func getBackendModel(reg *llm.Registry, agentName string) model.BaseChatModel {
+    cfg := conf.GetConfig()
+    backendName, ok := cfg.Ai.AgentBackends[agentName]
+    if !ok || backendName == "" {
+        backendName = reg.FirstKey()
+    }
+    return reg.Get(backendName)
+}
+```
 
-根据任务复杂度分配不同能力的模型，平衡成本与质量：
+切换模型只改 YAML，不改一行业务代码；缺失映射自动 fallback，保证可用性。
 
-| 模型级别 | 用途 | 示例 Agent |
-|---------|------|-----------|
-| haiku | 快速响应、简单对话 | 轻量任务 |
-| sonnet | 均衡能力、代码生成 | MiEditer / MiSummarizer / MiCommander |
-| opus | 最强推理、深度分析 | MiPlanner / MiAuditor |
-| default | 编排调度主脑 | Mifer（Orchestrator） |
-
-### 2.4 为什么 Agent 编排设 0 轮迭代？
-
-`MaxIteration=0` 由模型自主控制迭代次数，避免预设上限导致任务中断，也避免过多迭代造成反思循环。模型在判断任务完成时自行停止，无需框架硬编码上限。
-
-### 2.5 为什么设计 serve / chat / default 三种启动模式？
+### 2.3 serve / chat / default 三种启动模式
 
 ```
 go run ./cmd/main          → 同时启动服务 + CLI（default）
 go run ./cmd/main serve    → 仅启动 HTTP 服务（生产部署）
-go run ./cmd/main chat     → 仅启动 CLI 客户端（连接已有服务）
+go run ./cmd/main chat     → 仅启动 CLI 客户端（连接已有服务，--<id> 可指定会话）
 ```
 
-CLI 和服务端之间通过 HTTP + SSE 通信，CLI 本身不直接依赖 `internal/` 的任何模块。这意味着：
+CLI 和服务端之间通过 HTTP + SSE 通信，这意味着：
+
 - **同一套 HTTP API** 同时服务于 CLI 和未来的 Web UI
-- **CLI 可独立连接到远程服务**：`chat` 模式下 CLI 仅作为 HTTP 客户端
-- **default 模式自动编排**：启动服务后等待就绪，再启动 CLI，`Ctrl+C` 同时关闭两者
+- **CLI 可独立连接远程服务**：`chat` 模式下 CLI 仅是 HTTP 客户端，不加载模型、不初始化记忆
+- **default 模式自动编排**：启动服务 sleep 1s 后拉起 CLI，信号与 channel 双通道同步退出
+
+会话 ID 的生成也值得注意：`bootstrap.initontext` 用 `RandomStr(8)` 加 Workdir 做 `PseudoRandom` 哈希，既保证同工作目录的可关联性，又用 64 bit 熵避免碰撞；`main.go` 的 `--<id>` 参数可手动指定，实现跨进程恢复同一会话。
+
+### 2.4 接口隔离：domain 层契约
+
+`internal/domain/bridge.go` 定义 `AgentService` 与 `Agent` 两个方法签名完全相同的接口——前者给 HTTP Handler 用，后者由 executor 实现，service 层 1:1 委托：
+
+```go
+type AgentService interface {
+    Chat(ctx context.Context, req *TalkReq, callback func(event, content string) error) error
+    LoadMemory(ctx context.Context, req *MemoryReq) (*MemoryResp, error)
+    Reback(ctx context.Context, req *RebackReq) (*RebackResp, error)
+    // ... 共 18 个方法
+}
+```
+
+接口定义在消费侧（domain），实现在各自包内（`agentservice/`、`toolservice/`、`executor/`），HTTP 层完全不感知 AI 实现细节，方便 mock 与替换。
 
 ---
 
 ## 三、AI 核心详解
 
-### 3.1 多 Agent 协作体系
+### 3.1 Agent 体系：单编排器 + 配置驱动子 Agent
 
-基于 Eino ADK 的 Orchestrator，Mifer 调度 5 个专家 Agent：
+主 Agent `Mifer` 通过 `deep.New` 创建，**直接拥有全部工具**——文件读写、命令执行、知识库、Web 搜索、技能调用、并行调度，无需委派即可独立完成任务：
 
-```
-用户输入
-  → Mifer (Orchestrator)   —— 分析意图，调度子 Agent，模型自主控制迭代
-      ├── MiEditer          —— 文件读写与创建 (sonnet)
-      ├── MiSummarizer      —— 文档摘要 + 知识库检索 (sonnet)
-      ├── MiPlanner         —— 项目计划与方案设计 (opus)
-      ├── MiCommander       —— 终端命令执行 (sonnet + 白名单约束)
-      └── MiAuditor         —— 代码与配置安全审计 (opus)
-```
-
-编排器关键参数：
-- `MaxIteration: 0`：由模型自主控制迭代次数
-- `EmitInternalEvents: true`：转发子 Agent 内部事件到父级事件流，TUI 侧边栏可实时显示子 Agent 及工具调用过程
-
-### 3.2 流式执行引擎 + Token 统计
-
-`executor/chat.go` 中的核心执行流程：
-
-```
-1. AppendUser → 将用户消息加入记忆
-2. runner.Run() → 获取事件迭代器
-3. 循环 iter.Next()
-    ├── event.AgentName 变化 → 发射 agent_start / agent_end 事件
-    ├── 检测 ToolCalls → 发射 tool_start 事件
-    ├── 检测 Tool 角色消息 → 发射 tool_end / tool_error 事件
-    ├── 流式消息 → 逐 chunk 发射 response 事件 + reasoning 事件
-    ├── 累加 Token 统计 (prompt/completion/cached/reasoning)
-    └── 非流式消息 → 发射完整 response
-4. AppendAssistant → 助手回复加入记忆
-5. memory.Save() → 增量持久化到 JSONL
+```go
+// agent/agent_mifer.go
+agent, err := deep.New(ctx, &deep.Config{
+    Name:        "Mifer",
+    Instruction: miferInstruction,
+    ChatModel:   agentModel,
+    ToolsConfig: adk.ToolsConfig{
+        EmitInternalEvents: true,
+        ToolsNodeConfig: compose.ToolsNodeConfig{
+            Tools:               orchTools,
+            ToolCallMiddlewares: []compose.ToolMiddleware{h.errorMw, confirmMiddleware, h.persistenceMw},
+        },
+    },
+    SubAgents:    subagents,
+    MaxIteration: 100,
+})
 ```
 
-Token 统计在 `tokens.go` 中独立管理，与 executor 主逻辑解耦，支持按会话累计、按模型分类。
+子 Agent 不再硬编码，而是**配置驱动**——YAML 的 `agents:` 段声明名称、描述、指令、后端和工具列表，启动时逐个创建并注册到 `skillHub`：
 
-### 3.3 RAG 检索增强（一）：懒加载 + 工具闭包注入
+```yaml
+agents:
+  - name: "MiTest"
+    description: "测试Agent"
+    instruction: "你是MiTest，测试Agent。"
+    model: "main"
+    tools: [file_reader]
+```
 
-知识库检索以**可选工具**形式接入——LLM 在对话中自主判断何时检索、何时入库，不需要预设规则。
+另有三个内置组件：
+
+| 组件 | 类型 | 说明 |
+|------|------|------|
+| PlanAgent | `adk.NewChatModelAgent` | 计划制定助手，只有只读工具（file_reader/file_viewer/web_search/web_fetch/knowledge_search），MaxIterations=20 |
+| PlanGraph | `compose.Graph` | `plan_agent(Lambda) → plan_write(Lambda) → plan_confirm(Lambda)` 三节点流水线 |
+| HabitGraph | `compose.Graph` | `ChatModel → Lambda(写 MIFER.md)`，用户画像总结 |
+
+`EmitInternalEvents: true` 将子 Agent 内部事件转发到父级事件流，TUI 侧边栏可实时显示工具调用过程。所有 Agent 注册进 `AgentHub`，供技能 fork 模式和 `parallel_dispatch` 按名路由。
+
+> ⚠️ `MaxIteration=100` 是防失控上限而非预期值——正常情况下模型判断任务完成后自行停止。设上限是为了避免异常场景下的无限反思循环烧光 Token。
+
+### 3.2 流式执行引擎
+
+`executor/chat.go` 把一次对话拆成三段：
+
+```
+prepareChat     → 压缩检查（上轮标记）→ session 切换 → AppendUser → 注入 callback 到 ctx
+runConversation → Prompt.Build → Runner.Run（最多 3 次重试）→ 迭代事件流
+finalizeChat    → AppendAssistant → Save → 自动重命名 → 快照 → 异步习惯总结
+```
+
+事件循环中的关键分流：
+
+```go
+// chat_run.go — 单次 agent 运行
+iter := e.Runner.Run(ctx, msgs, adk.WithCallbacks(toolCB))
+for {
+    event, ok := iter.Next()
+    // Agent 切换 → 发射 agent_start / agent_end
+    // 流式消息 → 逐 chunk 发射 response + thinking
+    // Usage 元数据 → Token 累计 + 压缩阈值检查
+}
+```
+
+错误处理分三类：`context.Canceled` 视为用户主动中断静默返回；网络类临时错误（timeout / TLS handshake / connection refused 等）走指数退避重试，最多 3 次；其余直接报错。
+
+Token 统计独立在 `tokens.go`：从 `ResponseMeta.Usage` 累加 prompt/completion/cached/reasoning 四项，通过 `\x00` 分隔的 payload 发给前端展示。每轮累计超过 `length × threshold` 时标记 `needsCompression`，下一轮对话开始前触发压缩。
+
+### 3.3 工具生态与三级中间件链
+
+每个工具独立子目录，通过 `utils.InferTool` 或 `utils.InferEnhancedTool` 创建：
+
+| 工具 | 能力 | 安全措施 |
+|------|------|---------|
+| file_reader | 读文本，start_line/max_lines 分页（默认 100 上限 500 行） | 路径 Clean 防穿越 |
+| file_writer / file_creator | 写入 / 创建文件 | 写前必读约束写入系统指令 |
+| file_viewer | 图片识别，批量路径 | `EnhancedInvokableTool` 返回 base64 图片数据，LLM 原生多模态识别 |
+| command_executor | Windows PowerShell / Unix bash | 危险命令正则拦截 + 沙箱 + 超时 + 输出限流 |
+| web_search | SearXNG（默认）/ Bing API / DuckDuckGo 三后端 | 结果数上限 10 |
+| web_fetch | HTML 正文提取 | SSRF 内网防护 + 重定向校验 |
+| knowledge_search / knowledge_store | 知识库检索（含上下文扩展）/ 入库 | 懒加载，未配置静默降级 |
+| parallel_dispatch | 并行调度多个已注册 Agent | 单次最多 10 任务，per-task recover |
+
+所有工具调用经过统一的中间件链（见 3.1 代码中的 `ToolCallMiddlewares`）：
+
+```
+errorMw（最外层）  → Go error 转文字响应，避免 error 中断对话流
+confirmMiddleware  → 敏感工具调用前阻塞等待用户确认
+persistenceMw（最内层）→ 已执行的 ToolCall + ToolResult 写入对话记忆
+```
+
+顺序有讲究：error 中间件放最外层才能捕获下游（如确认拒绝）产生的错误；持久化放最内层确保只记录真正执行了的调用。
+
+`file_viewer` 值得单独一提：早期版本为多模态单独传入一个视觉模型，现在改用 Eino 的 `EnhancedInvokableTool` 直接返回 `*schema.ToolResult`（base64 + MIME），框架自动把图片注入 `UserInputMultiContent`，由主对话模型原生识别——少一次模型调用，架构也更干净。
+
+### 3.4 命令执行的安全防线
+
+`command_executor` 是权限最大的工具，防御纵深做了五层：
+
+```go
+var dangerousPatterns = []*regexp.Regexp{
+    regexp.MustCompile(`rm\s+-rf`),
+    regexp.MustCompile(`mkfs\.`),
+    regexp.MustCompile(`sudo\s`),
+    regexp.MustCompile(`curl.*\|\s*(ba)?sh`),   // 下载执行
+    regexp.MustCompile(`:\(\)\s*\{`),            // fork bomb
+    // ... chmod 777 / dd / kill -9 / 写裸盘等共 17 条
+}
+```
+
+1. **危险命令正则拦截** — 匹配即拒绝并返回命中的规则名
+2. **交互式命令检测** — ssh/vim/top 等需要 TTY 的命令直接拒绝
+3. **电源命令检测** — reboot/shutdown/halt/poweroff 一律禁止
+4. **工作目录沙箱** — 解析后的绝对路径必须以 Workdir 为前缀（大小写与分隔符归一化后比较）
+5. **资源限制** — 超时默认 30s 最大 120s；stdout/stderr 各限 100KB，超出截断并标记
+
+Windows 下特意用 PowerShell 而非 cmd.exe——AI 倾向生成 Unix 风格命令，PowerShell 内置的 ls/cat/rm 别名兼容性远好于 cmd。
+
+`web_fetch` 同样有 SSRF 防护：拒绝 localhost/回环/10./172.16./192.168. 及云元数据地址，重定向时逐跳复查，最多 3 次重定向，Content-Type 必须是 text/html。
+
+### 3.5 工具调用确认机制
+
+基于 Eino `ToolCallMiddlewares` 实现的工具调用前用户确认——AI 执行任何敏感工具前先通过 SSE 通知 TUI，用户确认后才真正执行。
+
+**Store 采用 Actor 模型**：专用 goroutine + channel 串行化所有状态访问，外部通过发送闭包提交操作：
+
+```go
+// confirm/store.go
+func (s *Store) Resolve(id string, result ConfirmResult) {
+    s.cmdCh <- func(state *storeState) {
+        entry, ok := state.pending[id]
+        if ok {
+            select {
+            case entry.ResultCh <- result: // 缓冲为 1，非阻塞
+            default:
+            }
+        }
+    }
+}
+```
+
+**中间件的 Channel 阻塞模型**：
+
+```
+LLM 请求工具 → Middleware 判定需确认 → 生成 UUID 存入 PendingStore
+→ SSE "tool_confirm"（含完整参数 DTO）→ select 阻塞等待
+→ TUI 弹出确认列表 [Yes / No / Allow] → POST /api/tool/confirm → resolve channel 解除阻塞
+```
+
+判定是否需要确认的逻辑（`NeedConfirm`）：`enabled` 开关 → `exclude` 排除列表 → `command_executor` 额外查全局白名单（`.mifer/allowlist.yaml`，支持 `git*` 通配符）→ session 白名单。
+
+三态选择的语义：Yes 仅本次放行；No 拒绝并把错误文字返回给 LLM 自行调整；Allow 对非命令工具加入 session 白名单（对话结束自动清理），对命令工具写入磁盘白名单永久生效。Actor 主循环每 30s 巡检一次，清理超过 5 分钟无人处理的待确认项。
+
+### 3.6 RAG 检索增强（一）：懒加载 + 工具闭包注入
+
+知识库检索以**可选工具**形式接入——LLM 在对话中自主判断何时检索、何时入库。
 
 **懒加载层** (`LazyService`)：
+
 ```
-Init() → NewLazyService()   // 仅创建 embedder / loader / chunker，无网络调用，即时返回
+Init() → NewLazyService()   // 仅创建 embedder / loader / chunker，无网络调用
          ↓
 首次工具调用 → ensureReady()  // 此时才连接 Qdrant，创建 indexer / retriever
          ↓                 // Mutex 保护，失败后下次调用可重试
          组装为完整 Service
 ```
 
-**工具闭包注入** (`tools.KnowledgeTools(ragSvc)`)：
+**工具闭包注入**——工具包只依赖自己定义的最小接口：
+
 ```go
-func New(ragSvc rag.RAGService) (tool.InvokableTool, error) {
-    return utils.InferTool("knowledge_search", "检索知识库...", func(ctx, input) {
-        docs, _ := ragSvc.RetrieveWithContext(ctx, query, ctxSize) // 闭包捕获 ragSvc
+// knowledgesearch/knowledgesearch.go
+type retriever interface {
+    RetrieveWithContext(ctx context.Context, query string, contextSize int) ([]*schema.Document, error)
+    FormatDocs(docs []*schema.Document) string
+}
+
+func New(ragSvc retriever) (tool.InvokableTool, error) {
+    return utils.InferTool("knowledge_search", "...", func(ctx, input) {
+        docs, _ := ragSvc.RetrieveWithContext(ctx, input.Query, input.ContextSize)
         return KnowledgeSearchOutput{Results: ragSvc.FormatDocs(docs)}
     })
 }
 ```
 
-设计要点：
-1. **RAG 不是框架强制的依赖**，而是 AI 可选的工具——`KnowledgeTools(ragSvc)` 为 nil 时静默返回空工具列表
-2. **懒初始化零等待**：启动时不触碰网络；用户不触发知识库功能就永远不连接 Qdrant
-3. **失败可恢复**：`ensureReady()` 用 `sync.Mutex` 而非 `sync.Once`，上次连接失败后下次调用可重试
-4. **AI 自主决策**：工具通过闭包持有 RAG 接口，LLM 在对话中判断何时检索
+设计要点：RAG 不是框架强制的依赖，`KnowledgeTools(nil)` 静默返回空列表；启动零网络等待；`ensureReady` 用 Mutex 而非 sync.Once，连接失败后下次可重试。
 
-### 3.4 RAG 检索增强（二）：上下文分块扩展检索
+### 3.7 RAG 检索增强（二）：上下文分块扩展检索
 
-在基础语义检索之上，实现了**上下文窗口扩展**机制——检索到匹配分块后，自动获取其前后各 N 个相邻分块，合并去重后按文档和位置排序返回。
+仅有语义检索存在"断章取义"问题——命中分块缺乏前后文。`RetrieveWithContext` 在基础检索之上加了窗口扩展：
 
-```
-语义检索命中 chunk[i] → 查询同文档 chunk[i-N ... i+N] → 去重合并 → 排序输出
-```
-
-**核心实现** (`RetrieveWithContext`)：
-- 首次语义检索获取 TopK 匹配分块
-- 对每个匹配分块，按 `source_document` + `chunk_index` 范围查询相邻分块
-- 通过 `seen map` 去重
-- 最终结果按源文档 + 分块序号排序，保证上下文连贯性
-- LLM 可通过 `context_size` 参数控制扩展窗口大小
-
-这一设计解决了传统 RAG "只见树木不见森林"的问题。
-
-### 3.5 MCP 协议支持：外挂式工具生态
-
-基于 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) 实现外挂式工具扩展——第三方工具通过 stdio 协议接入，AI 在对话中自动发现和调用，无需修改 Mifer 核心代码。
-
-**架构**：
-```
-MCP Manager (生命周期管理)
-  → MCPToolAdapter (JSON Schema → Eino InvokableTool 自动转换)
-    → GetToolsForAgent(agentName) (按 Agent 名路由工具)
+```go
+// rag/retrieve.go
+filter := &qdrant.Filter{
+    Must: []*qdrant.Condition{
+        qdrant.NewMatchKeyword("source_document", srcDoc),
+        qdrant.NewRange("chunk_index", &qdrant.Range{Gte: &gte, Lte: &lte}),
+    },
+}
+neighbors, err := s.retriever.Retrieve(ctx, query,
+    qdrantretriever.WithFilter(filter),
+    retriever.WithTopK(contextSize*2+1))
 ```
 
-**关键设计**：
-- **工具适配层** — Schema 通过 JSON 桥接自动转换，无需手工映射；工具名以 `{serverName}_{toolName}` 命名空间隔离
-- **Agent 级分配** — 每个 MCP Server 配置 `agents` 字段指定工具分配给哪些子 Agent
-- **热重载** — `Reload()` 对比新旧配置增量更新（新增/删除/配置变更），不停机
-- **失败隔离** — 单个 Server 连接失败不阻塞其他 Server 和 Agent 启动
-- **状态可观测** — `GET /api/mcp/status` 返回所有 Server 的连接状态与工具数量，CLI `/mcp` 命令实时查看
-- **进程隔离** — MCP Server 以 stdio 子进程运行，错误不暴露给终端用户
-- **内置 Demo Server** — `cmd/mcp-demo/` 提供 echo / get_time / calculator / random_number 示例工具
+流程：首次语义检索取 TopK → 对每个命中分块按 `source_document + chunk_index` 范围查询前后 N 个邻居 → `seen map` 去重 → 按源文档和分块序号排序输出。单个文档邻居查询失败只跳过不影响整体。LLM 可通过 `context_size` 参数控制窗口大小，默认 0 不扩展。`FormatDocs` 按文档分组渲染，保持阅读连贯性。
 
-### 3.6 Skills 技能系统：声明式自定义技能
+### 3.8 MCP 协议支持：外挂式工具生态
 
-Skills 允许用户通过 **YAML frontmatter + Markdown 指令** 声明式定义技能，支持 `inline`（内联）和 `fork`（分叉）双模式执行。
+基于 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) 实现外挂式工具扩展——第三方工具以 stdio 子进程接入，AI 自动发现和调用，无需修改 Mifer 核心代码。
 
-**技能示例**：
+```
+MCP Manager (生命周期管理：启动/握手/ListTools/关闭)
+  → MCPToolAdapter (JSON Schema 序列化桥接 → Eino InvokableTool)
+    → GetToolsForAgent(agentName) (按 Agent 名路由)
+```
+
+适配的核心是 Schema 桥接——MCP 的 InputSchema 经 JSON 序列化后反序列化为 Eino 的 jsonschema.Schema，零手工映射：
+
+```go
+rawJSON, _ := json.Marshal(a.mcpTool.InputSchema)
+var einoSchema jsonschema.Schema
+json.Unmarshal(rawJSON, &einoSchema)
+info.ParamsOneOf = schema.NewParamsOneOfByJSONSchema(&einoSchema)
+```
+
+关键设计：
+
+- **命名空间隔离** — 工具名 `{serverName}_{toolName}`，避免多 Server 冲突
+- **Agent 级分配** — 每个 Server 配置 `agents` 字段，空或 `["*"]` 表示全部可用
+- **失败隔离** — 单个 Server 连接失败只标记 Status=error，不阻塞其他 Server；初始化失败时 defer 关闭客户端防止子进程泄漏
+- **错误转文字** — `result.IsError` 时返回错误文本而非 Go error，让 LLM 自行处理
+- **状态可观测** — `GET /api/mcp/status` 返回连接状态与工具数量，CLI `/mcp` 实时查看
+- **内置 Demo** — `cmd/mcp-demo/` 提供 echo / get_time / calculator / random_number 四个示例工具
+
+### 3.9 Skills 技能系统：声明式自定义技能
+
+Skills 允许用户通过 **YAML frontmatter + Markdown 指令**声明式定义技能，支持 `inline`（内联）和 `fork`(分叉) 双模式：
+
 ```markdown
 ---
 name: my-skill
 description: 我的自定义技能
 context: fork
-agent: MiEditer
+agent: MiTest
 ---
 
 # 技能指令
 当此技能被调用时，请按以下步骤操作...
 ```
 
-**关键设计**：
-- **inline 模式** — 技能内容直接注入当前对话上下文，LLM 在同一 Agent 中遵循指令执行
-- **fork 模式** — 通过 `AgentHub` 查找目标 Agent，创建子 Agent 独立执行；目标 Agent 不存在时自动降级为 inline
-- **AgentHub 依赖反转** — 技能系统通过 `AgentHub` 接口查找 Agent，不直接依赖 `internal/ai/agent`
-- **文件系统即数据库** — 技能以 `目录名/SKILL.md` 形式存储，零配置、零依赖
-- **LLM 自主选择** — `skill` 工具的描述中动态注入所有可用技能列表，LLM 根据用户意图自主判断是否调用
+- **inline 模式** — 技能内容直接返回注入当前上下文，LLM 在同一 Agent 中遵循执行
+- **fork 模式** — 通过 `AgentHub` 查找目标 Agent 创建子任务独立执行；目标不存在自动降级 inline
+- **动态描述** — `SkillTool.Info()` 把所有可用技能列表拼进 tool description，LLM 根据用户意图自主选择是否调用
+- **零配置存储** — 技能即 `目录名/SKILL.md`，frontmatter 手工解析避免引入 YAML 依赖；首次启动自动创建 hello-world 示例和内置的 context-summarizer（供压缩器使用）
 
-### 3.7 工具调用确认机制
+### 3.10 /plan 计划强制执行：PlanGraph
 
-基于 **Eino `ToolsNodeConfig.ToolCallMiddlewares`** 实现的工具调用前用户确认系统——AI 执行任何工具前先通过 SSE 通知 TUI，用户确认后才真正执行。
+`/plan <任务>` 触发两阶段流程，通过**工具隔离 + 用户确认**确保先规划后执行：
 
-**架构**：
 ```
-LLM 请求工具 → ToolMiddleware 拦截 → 存入 PendingStore + 发送 SSE "tool_confirm"
-→ TUI 侧边栏显示确认列表 [Yes / No / Allow]
-→ 用户选择 → POST /api/tool/confirm → resolve channel → 中间件解阻塞
+用户 /plan <任务>
+  │
+  ├── PlanAgent(只读工具) 流式分析 → planning/thinking/response 事件实时显示
+  ├── plan_write Lambda → 计划写入 .mifer/plans/plan_时间戳.md
+  ├── plan_confirm Lambda → SSE "plan_confirm" → TUI 全屏预览 → Enter 确认 / Esc 拒绝
+  └── Mifer(全工具) 按计划执行 → 正常对话流
 ```
 
-**关键设计**：
-- **Actor 模型并发** — `confirm.Store` 使用专用 goroutine + channel 串行化所有状态访问，避免锁竞争
-- **Channel 阻塞模型** — 中间件生成 UUID，写入 `PendingStore`（含 `chan ConfirmResult`），发送 SSE 后 `select` 阻塞等待
-- **三态确认** — Yes（仅本次执行）、No（拒绝）、Allow（始终允许：非命令工具加入 Session 白名单，命令工具写入 `.mifer/allowlist.yaml` 持久化）
-- **配置驱动** — `confirm.enabled` 开关 + `confirm.exclude` 排除列表
+这是 Eino Graph 编排的典型应用——三个 Lambda 节点串联编译为 `Runnable[[]*schema.Message, string]`：
 
-### 3.8 全局工具回调
+```go
+g.AddLambdaNode("plan_agent", ...)   // 运行 PlanAgent，转发流式事件
+g.AddLambdaNode("plan_write", ...)   // 持久化计划文件
+g.AddLambdaNode("plan_confirm", ...) // 复用 confirm.Store 阻塞等待用户，30 分钟超时
+g.AddEdge(compose.START, "plan_agent")
+```
 
-基于 Eino 全局回调机制统一处理所有工具调用事件（开始 / 结束 / 错误），替代了早期分散在各 executor 中的事件处理代码。TUI 侧边栏通过回调事件实时展示工具执行状态。
+工具层面强制隔离：PlanAgent 只有只读工具，**无写入和命令权限**，从根上杜绝"跳过计划直接动手"。拒绝时返回哨兵错误 `ErrPlanRejected`，上层捕获后发 system 事件告知用户。整个流程共享 Memory，计划确认后保存一轮、执行完成再保存一轮，历史完整不丢上下文。
 
-### 3.9 对话回退 (Reback)
+### 3.11 上下文压缩：三层记忆模型 + Offload
 
-支持将对话回退到历史任意轮次后重新生成。底层在 JSONL 文件中按索引截断，`AgentService.Reback(ctx, index)` 统一接口，同时清理内存中的 Agent 状态，保证回退后对话连续性。
+长对话必然撑爆上下文窗口。Mifer 的方案不是简单丢弃历史，而是按信息密度分层处理：
 
-### 3.10 配置热重载
+```
+Layer 1（最近 recent_rounds 轮）— 完整保留，含 ToolCall + ToolResult 原文
+Layer 2（中间 slim_rounds 轮）— 保留 ToolCall，超长 ToolResult 截断/offload
+Layer 3（更早轮次）— 调用压缩模型生成摘要，替换为两条 System 消息
+```
 
-`/reload` 命令或 `POST /api/admin/reload` 接口触发，运行时重新加载 YAML 配置、命令白名单和 MCP Server 配置，无需重启服务。
+以 User 消息为边界切分轮次后逐层处理。Layer 2 的 offload 机制最有意思——超过 50KB 的工具结果不粗暴截断，而是存档到本地文件并留下可追溯的占位符：
 
-### 3.11 Plan 管理：AI 自主的计划系统
+```go
+copied.Content = fmt.Sprintf(
+    "【工具结果已存档】工具 [%s] 返回了约 %d 字符的结果，完整内容已保存至 %s。" +
+    "如需查看完整结果，请使用 file_reader 工具读取该文件。\n\n" +
+    "结果摘要（前 1000 字符）：\n%s", ...)
+```
 
-Plan 功能的设计哲学是**"由 AI 决定，而非框架强制"**——不使用 Graph/Workflow 的强制编排，让 LLM 自主调度计划。
+这样 LLM 需要时可以主动找回完整数据。摘要阶段复用内置的 `context-summarizer` 技能模板 + `fast-model` 后端，每条消息超 8000 字节按 UTF-8 字符边界截断（避免切出半个汉字）。降级策略完备：技能缺失、模型不可用或调用失败时，退化为移除最早轮次只保留最近 N 轮。
 
-- **无 Graph 强制** — `MiPlanner` Agent 配备 `PlannerTools()`（仅限文件创建和写入，工作目录锁定在 `.mifer/plans/`），AI 直接编写 Markdown 计划文件
-- **面向 AI 能力演进** — 随着 LLM 推理能力增强，许多需要工程化 Graph 编排的场景可以由 AI 自主完成
-- **CLI 集成** — `/plan` 命令查看计划文件列表，回车加载并展示计划内容
+触发时机有两个：Token 累计超阈值后下一轮对话前自动压缩，或 `/compact` 命令手动触发。压缩完成后 `ReplaceMessages` 原子替换记忆并全量重写文件。
 
-### 3.12 /init 命令：AI 自动生成项目提示词
+### 3.12 文件快照：对话回退的文件级 Undo
 
-`/init` 命令让 AI 自动探索项目结构、阅读源码和已有文档，然后生成 `.mifer/MIFER.md` 项目级提示词文件。执行流程：
+AI 改错了文件怎么办？`pkg/snapshot/` 实现了基于**内容寻址 + 追加式变更日志**的增量快照系统，让对话回退时文件状态一并回滚：
 
-1. AI 列出项目目录结构，识别配置文件、源码目录和文档
-2. 分批次阅读所有核心源文件和配置文件
-3. 阅读已有文档补充理解
-4. 生成 MIFER.md，包含项目概述、技术栈、架构、构建命令、代码约定和开发指南
+```
+{sessionID}_snapshots/
+├── objects/{hash前2位}/{完整sha256}   ← 文件内容仓库（去重）
+└── changes.jsonl                      ← 追加式变更日志
+```
 
-生成的 MIFER.md 自动拼接到系统提示词中，后续对话中 AI 自动获得项目上下文。
+```go
+// copy.go — 快速变更检测：size+mtime 未变直接跳过
+if hasLast && lastEntry.Size == info.Size() && lastEntry.Mtime == currentMtime {
+    return nil
+}
+hash, size, _ := s.computeFileHash(path)  // 仅变更文件计算 SHA256
+s.storeObject(path, hash)                 // 内容去重入库
+s.appendChange(entry)                     // 追加日志
+```
 
-### 3.13 /config 命令：外部编辑器修改配置
+设计要点：
 
-`/config` 命令调出系统默认编辑器（优先级：配置 `cli.tui.editor` → `$VISUAL` → `$EDITOR` → 平台默认）直接编辑 YAML 配置文件，关闭编辑器后自动执行 `/reload` 热重载。
+- **追加式而非每轮全量目录** — 恢复时扫描 `round ≤ target` 的条目，对每个文件取最新一条重建状态，删除用空 Hash 标记
+- **按需计算** — size + mtime 未变的文件零开销；本轮无任何变更就不产生日志
+- **恢复即双向同步** — 从 objects 池还原目标文件，同时删除目标状态中不存在多余文件
+- **孤儿治理** — `RemoveRound` 过滤指定轮次条目后 tmp + Rename 原子重写；`InitBaseline` 保证 r0 基线存在，并自动迁移旧版 `r{N}/` 目录格式
+- **纯库设计** — 不依赖项目内任何包，排除 `.git`/`node_modules`/`.mifer` 等目录
 
-### 3.14 多模态与工具生态
+回退时的联动：`Executor.Reback` 先回滚记忆，再 `RestoreToRound(index-1)` 恢复文件，最后删除被回退轮次的快照记录——对话和文件系统保持一致。
 
-- **文件查看器**：支持图片（多模态模型描述）、PDF / Word / Markdown / 纯文本的加载与读取，自动 MIME 检测
-- **图片生成器**：通过多模态模型 API 调用图片生成服务
-- **知识库工具**：`knowledge_search` 检索（含上下文扩展）+ `knowledge_store` 入库，文档自动切分（递归分块 + SHA256 去重）与向量化
+> ⚠️ 快照按 `{sessionID}_snapshots/` 隔离，但操作同一个 workdir。多个并发会话各自回退可能互相覆盖文件，设计上假设同一工作目录同时只有一个活跃会话。
+
+### 3.13 HabitGraph：自动维护的用户画像
+
+每轮对话结束后异步触发（fire-and-forget，不阻塞响应）：读取已有的用户级 `MIFER.md`，连同本轮对话一起交给 `habit_summarizer` 后端分析，输出增量更新后的画像并全量覆写。
+
+- 分析维度：编程语言偏好、技术栈、工作习惯、常用工具、项目类型、沟通风格
+- 明确要求不记录敏感信息（密码、密钥、个人身份信息）
+- 用户级 `~/.mifer/MIFER.md` 与项目级 `.mifer/MIFER.md` 都会自动拼接到系统提示词，前者优先
+
+配合 `/init` 命令（AI 探索项目结构、阅读源码后自动生成项目级 MIFER.md），形成"项目上下文 + 用户习惯"的双重个性化。
+
+### 3.14 配置热重载（带回滚）
+
+`/reload` 命令或 `POST /api/admin/reload` 触发运行时重载：
+
+```go
+// routes/reload.go
+oldConfig := *conf.GetConfig()          // 1. 快照旧配置
+conf.LoadConfig()                        // 2. 重读
+conf.StatusConfig()                      // 3. 校验，失败回滚
+newExec, err := executor.Init(r.appCtx)  // 4. 重建执行器，失败回滚
+oldSvc := r.agentHandler.SwapService(...) // 5. RWMutex 保护下原子替换
+oldAgentSvc.CloseExecutor()               // 6. 释放旧实例资源（MCP 子进程、确认 Store actor）
+```
+
+响应中携带每个后端的状态报告（ok / failed + 原因），api_key 未配置的后端会被明确指出。适用于动态切换模型、调整参数、启用新 MCP Server 等场景，全程不停机。
+
+### 3.15 per-invocation 回调替代全局注册
+
+工具事件的传递经历了一次架构修正：早期用 `callbacks.AppendGlobalHandlers` 全局注册，callback 通过 context 注入；现在改为 `callback.NewHandler(cb)` 闭包工厂，每次 `Runner.Run()` 通过 `adk.WithCallbacks(handler)` 按调用注入：
+
+```go
+toolCB := aicallback.NewHandler(callback)          // 闭包捕获，零依赖 context
+iter := e.Runner.Run(ctx, msgs, adk.WithCallbacks(toolCB))
+```
+
+OnStart/OnEnd/OnError 三个处理器都通过闭包持有 cb。额外做了一个补漏：工具可能执行成功但返回值 JSON 里带 `error` 字段（如"文件不存在"），Go error 为 nil，此时从返回值中提取 error 字段补发 `tool_error` 事件。
 
 ---
 
@@ -347,37 +562,49 @@ Plan 功能的设计哲学是**"由 AI 决定，而非框架强制"**——不�
 ### 4.1 Bubble Tea Elm 架构
 
 ```
-NewModel(client, config)
-  → 创建 Model (注入 client / config / mark / lip 样式)
-  → 初始化子组件 (textarea / spinner / viewport / memoryList / sidebarVP)
-
+NewModel(client) → 注入 mark/lip 样式，初始化 textarea/spinner/viewport/各选择列表
 tea.NewProgram(m).Run()
-  → Init()    → textarea.Blink (光标闪烁命令)
-  → Update()  → 事件循环 (按键/流式消息/窗口变化/spinner tick)
-  → View()    → 7 步渲染管线
+  → Init()    → textarea.Blink + 后端状态检查（api_key 未配置提前告警）
+  → Update()  → 消息循环（按键/流式消息/窗口变化/spinner tick）
+  → View()    → 渲染管线输出
 ```
 
-### 4.2 Update 消息分发
+Model 的状态划分非常细致：消息区 viewport、侧边栏 viewport、全屏记忆查看 viewport、全屏计划查看 viewport 各自独立；输入历史环形缓冲支持 ↑↓ 导航，进入导航前暂存当前输入便于恢复。
 
-| 消息类型 | 触发条件 | 处理逻辑 |
-|---------|----------|---------|
-| WindowSizeMsg | 终端尺寸变化 | 重新计算 viewport/sidebar/textarea 尺寸 |
-| MouseMsg | 鼠标滚轮/点击 | 委托给对应 viewport 处理 |
-| KeyMsg | 按键输入 | 多模式分发：记忆模式 / 补全模式 / 正常输入 |
-| streamStatusMsg | Agent切换/工具调用 | 更新侧边栏状态（含工具确认列表） |
-| streamContentMsg | AI 流式输出 | 追加到 accBuf，逐字渲染 |
-| streamDoneMsg | 流式传输完成 | Markdown 渲染，追加到消息列表 |
-| chatRespMsg | 非流式回退 | Glamour 渲染，显示完整响应 |
-| systemMsg | 命令执行结果 | 追加系统消息到对话区 |
-| spinner.TickMsg | 旋转动画帧 | 推进 spinner 动画 |
+### 4.2 流式传输与侧边栏
 
-### 4.3 Tab 命令补全
+流式响应通过 `streamCh` channel 送入 Update 循环，逐 chunk 追加缓冲区实时渲染，`Ctrl+C` 可中断——已生成的部分内容保留，不丢上下文。
 
-输入以 `/` 开头时自动触发命令补全，补全列表最多显示 5 条，超出后视窗滚动。支持的命令包括 `/help`、`/exit`、`/viewmemory`、`/excmem`、`/reback`、`/reload`、`/mcp`、`/skill`、`/plan`、`/init`、`/config`、`/compact`。
+侧边栏是一个小型状态机，区分两个概念：
 
-### 4.4 SSE 流取消
+```go
+Current      string // 显示层的活跃项（agent 名或缩进的 tool 名）
+CurrentAgent string // 真正运行中的 agent（不被工具事件覆盖）
+```
 
-TUI 模式下支持 `Ctrl+C` 中断正在生成的 SSE 流——取消后对话记录保留已生成的部分内容，不会丢失上下文。
+`tool_start` 只覆盖 Current 显示，不动 CurrentAgent；`tool_end` 后回落显示仍在运行的 agent；`agent_end` 只有匹配 CurrentAgent 才生效，重复/乱序事件幂等忽略。这个设计解决了嵌套事件乱序导致的显示错乱。底部实时显示 Token 用量统计，每条日志带时间戳。
+
+### 4.3 命令系统
+
+输入 `/` 开头触发 Tab 补全（最多显示 5 条，超出滚动）。完整命令集：
+
+| 命令 | 功能 |
+|------|------|
+| `/help` `/exit` `/quit` | 帮助 / 退出 |
+| `/clear` | 清除当前对话创建新会话 |
+| `/viewmemory [id]` | 查看/加载历史会话（全屏浏览模式） |
+| `/excmem <id>` | 切换到指定会话 |
+| `/rename <name>` | 重命名当前会话 |
+| `/reback` | 列出可回退轮次，选择后对话+文件一并回滚 |
+| `/compact` | 手动触发上下文压缩 |
+| `/prompt [text\|reset]` | 查看/设置/重置系统提示词 |
+| `/reload` `/config` | 热重载 / 外部编辑器打开配置（关闭后自动 reload） |
+| `/plan <描述>` | 计划模式：先规划 → 确认 → 再执行 |
+| `/plan` | 浏览已有计划文件 |
+| `/init` | AI 分析项目生成 `.mifer/MIFER.md` |
+| `/mcp` `/skill` `/agents` | MCP 状态 / 技能列表 / Agent 列表 |
+
+工具确认弹窗针对每种工具定制参数展示——command_executor 显示命令原文、file_creator 显示路径和内容预览，让用户明确知道要确认的是什么。
 
 ---
 
@@ -385,43 +612,42 @@ TUI 模式下支持 `Ctrl+C` 中断正在生成的 SSE 流——取消后对话�
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/ai/chat` | 流式对话（SSE） |
+| POST | `/api/ai/chat` | 流式对话（SSE），支持 `mode:"plan"` 与 `session_id` 自动切换 |
 | GET | `/api/memory` | 记忆列表 |
 | GET | `/api/memory/:id` | 获取指定会话记忆 |
 | POST | `/api/memory/exchange/:id` | 切换记忆会话 |
 | POST | `/api/memory/clear` | 清除当前记忆 |
+| POST | `/api/memory/rename` | 重命名会话 |
+| POST | `/api/memory/compact` | 手动上下文压缩 |
 | GET | `/api/memory/reback` | 获取回退索引列表 |
-| POST | `/api/memory/reback/:index` | 回退到指定轮次 |
-| GET | `/api/prompt` | 获取系统提示词 |
-| POST | `/api/prompt` | 修改系统提示词 |
+| POST | `/api/memory/reback/:index` | 回退到指定轮次（含文件快照恢复） |
+| GET/POST | `/api/prompt` | 系统提示词读取 / 修改 |
 | POST | `/api/prompt/reset` | 重置为默认提示词 |
-| POST | `/api/admin/reload` | 热重载配置与白名单 |
-| GET | `/api/plan` | 列出所有计划文件 |
-| GET | `/api/plan/:name` | 获取指定计划内容 |
+| POST | `/api/admin/reload` | 配置热重载（带回滚） |
+| GET | `/api/admin/status` | 后端就绪状态检查 |
+| GET | `/api/plan` `/api/plan/:name` | 计划文件列表 / 内容 |
 | GET | `/api/mcp/status` | MCP Server 状态查询 |
 | GET | `/api/skill/list` | 已加载技能列表 |
+| GET | `/api/agents` | Agent 列表（含后端、模型、工具集） |
+| POST | `/api/tool/confirm` | 工具确认结果提交 |
+| POST | `/api/tool/allowlist/add` | 命令白名单追加 |
 
-Chat 接口采用 SSE（Server-Sent Events）流式传输，事件格式：
+Chat 接口采用 SSE 流式传输，共 11 种事件类型：
 
 ```
-event: response
-data: {"content": "你好"}
-
-event: thinking
-data: {"content": "让我思考一下..."}
-
-event: agent_start
-data: "MiPlanner"
-
-event: tool_start
-data: "file_reader"
-
-event: tool_confirm
-data: {"uuid":"...", "tool":"command_executor", "params":{...}}
-
-event: token
-data: {"prompt": 150, "completion": 80, "total": 230, "cached": 20, "reasoning": 45}
+event: response      data: {"content": "你好"}                    # 内容 token 流
+event: thinking      data: {"content": "让我思考一下..."}          # 推理过程流
+event: agent_start   data: "PlanAgent"                            # Agent 切换
+event: tool_start    data: "file_reader\x00{\"file_path\":...}"   # \x00 分隔工具名与参数
+event: tool_end      data: "file_reader"
+event: tool_error    data: "file_reader\x00文件不存在"
+event: tool_confirm  data: {"uuid":"...", "tool":"command_executor", "params":{...}}
+event: plan_confirm  data: {"id":"...", "file_path":"...", "content":"..."}
+event: token         data: "150\x0080\x00230\x0020\x0045"          # prompt/completion/total/cached/reasoning
+event: system        data: "正在分析项目并制定计划..."              # 系统通知
 ```
+
+`[DONE]` 表示正常结束，`[ERROR] <msg>` 表示流错误。底层 `pkg/sse/writer.go` 由专用 goroutine + 缓冲 channel（buf=16）驱动：`SendSync` 阻塞写入并感知断连，`SendFire` 即发即忘用于心跳；写入失败自动触发 cancel 联动请求退出，channel 满判定 TCP 半开直接放弃，避免死锁。
 
 ---
 
@@ -429,60 +655,48 @@ data: {"prompt": 150, "completion": 80, "total": 230, "cached": 20, "reasoning":
 
 ### 配置管理（Viper）
 
-- 首次运行自动生成默认配置文件（带中文注释）
-- 支持环境变量覆盖（`MIFER_AI_BASEURL`, `MIFER_AI_APIKEY`, `MIFER_AI_MODEL` 等）
-- 多环境配置：dev 模式路径 `./config/`，prod 模式路径 `~/.mifer/config/`
+首次运行自动生成带中文注释的默认配置，涵盖运行环境、日志、JWT、快照开关、RAG、MCP、搜索、技能、确认策略、AI 后端、压缩参数、自定义 Agent、Gin、TUI 样式等全部模块。敏感字段支持环境变量覆盖：`MIFER_AI_BACKENDS_<NAME>_APIKEY` 可覆盖任意后端的 api_key，另有 `MIFER_JWT_SECRET`、`MIFER_SEARCH_API_KEY` 等。dev 模式配置在 `./config/dev.yaml`，prod 在 `~/.mifer/config/prod.yaml`。
 
-### 日志系统（Zap + Lumberjack）
+### 日志系统（Zap）
 
-- dev → 控制台彩色输出，prod → JSON 格式，按级别分文件（debug/info/warn/error）
-- 日志轮转：单文件最大 10MB，保留 5 个备份
+按级别分四个文件（debug/info/warn/error.log），自定义 `rotatingFile` 按大小轮转淘汰。dev 彩色控制台 Debug 级别，prod JSON Info 级别。TraceMiddleware 注入 TraceID 贯穿请求链路。结构化字段用 `logger.S/I/U/C` 辅助函数，日志消息统一中文。
 
 ### Docker 部署
 
 ```bash
-# 构建并启动全部服务（Mifer + Qdrant + Ollama）
-docker-compose up -d
-
-# 仅启动 Mifer（需自行提供 Qdrant 和 Ollama）
-docker-compose up -d mifer
+docker-compose up -d              # 全部服务
+docker-compose up -d qdrant       # 按需启动单个
 ```
 
-### 优雅启动
+| 服务 | 端口 | 用途 |
+|------|------|------|
+| Qdrant | 6333/6334 | RAG 向量数据库 |
+| SearXNG | 18080 | 元搜索引擎，web_search 默认后端 |
+| Ollama | 11434 | 本地嵌入模型 |
+| Loki + Promtail | 3100 | 日志聚合与采集 |
 
-端口冲突时自动递增重试（最多到 18000）：
+### 优雅启动与关闭
 
-```go
-func (a *Application) Run() error {
-    for a.Config.Gin.Port <= 18000 {
-        err = a.server.ListenAndServe()
-        if err != nil && err != http.ErrServerClosed {
-            a.Config.Gin.Port += 10  // 端口自增 10
-            continue
-        }
-        return nil
-    }
-}
-```
+端口冲突自动递增重试（+=10，上限 18000）；关闭时 30s 超时优雅停机，Executor 统一释放 MCP 子进程与确认 Store 的 actor goroutine。
 
 ### CI/CD
 
-GitHub Actions，Tag 推送自动构建 Windows + Linux 多架构二进制。
+GitHub Actions 推送 `v*` 标签自动构建 Windows/Linux × amd64/arm64 四平台二进制（`CGO_ENABLED=0` + `-ldflags="-s -w"`），打包为 zip/tar.gz 附带使用教程与 docker-compose.yml，发布 GitHub Release。
 
 ---
 
 ## 七、项目亮点总结
 
-1. **Eino ADK 多 Agent 编排**：5 子 Agent + 1 Orchestrator 协作，三级模型路由（haiku/sonnet/opus），0 轮迭代由模型自主控制
-2. **自建 JSONL 记忆层**：增量追加 + 锁保护 + 多会话隔离 + 对话回退，零外部依赖
-3. **Registry 多 LLM 管理**：4 个 provider 函数表注册 + fallback 机制，切换模型不改业务代码
-4. **RAG 检索增强**：懒加载 + 工具闭包注入 + 上下文分块扩展检索，AI 自主决策检索时机
-5. **MCP 协议工具生态**：外挂式工具扩展，JSON Schema 自动适配，Agent 级分配，热重载，失败隔离
-6. **Skills 技能系统**：YAML 声明式定义，inline/fork 双模式，AgentHub 依赖反转，零配置存储
-7. **工具调用确认**：Actor 模型 + Channel 阻塞 + 三态确认（Yes/No/Allow），持久化白名单
-8. **流式 SSE + 事件管道**：Agent 切换/工具调用/推理过程/token 统计全部以事件穿透到 TUI 侧边栏
-9. **Bubble Tea TUI**：Elm 架构 + Markdown 渲染 + 流式实时输出 + 命令补全 + SSE 流取消
-10. **配置热重载**：`/reload` 运行时更新配置、白名单、MCP Server，无需重启
+1. **Eino 深度实践**：ADK 编排器 + Graph 流水线（Plan/Habit）+ ToolMiddleware 三件套（错误转换/确认/持久化），一套代码演示了框架的全部主流用法
+2. **配置驱动的多 Agent**：自定义 Agent、后端映射、工具分配全部 YAML 声明，缺失配置逐级 fallback
+3. **自建 JSONL 记忆层**：增量追加 + 原子替换 + 多会话切换 + 回退 + 自动重命名，零外部依赖
+4. **工具调用确认**：Actor Store + Channel 阻塞 + 三态确认（Yes/No/Allow），session 白名单与磁盘白名单双层豁免
+5. **三层上下文压缩**：完整保留/精简/offload 分层处理，超长结果存档可溯源，多重降级兜底
+6. **文件快照系统**：内容寻址去重 + 追加式变更日志，对话回退时文件状态一并 Undo
+7. **RAG 懒加载 + 上下文扩展检索**：启动零网络等待，命中分块自动带前后文，解决"只见树木不见森林"
+8. **MCP 外挂工具生态**：JSON Schema 自动桥接，Agent 级分配，失败隔离，热重载
+9. **安全纵深**：危险命令正则拦截、工作目录沙箱、SSRF 防护、超时与输出限流、人机确认
+10. **工程完整性**：SSE 心跳与断连感知、热重载带回滚、四平台 CI、优雅停机、结构化日志 TraceID
 
 ---
 
@@ -492,4 +706,4 @@ GitHub Actions，Tag 推送自动构建 Windows + Linux 多架构二进制。
 - [ ] Web UI 管理面板
 - [ ] 会话分支与多路线对话探索
 - [ ] Redis 缓存集成——会话状态与工具结果缓存
-- [ ] 单元测试覆盖
+- [ ] 单元测试覆盖补全
