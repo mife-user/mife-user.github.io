@@ -3104,6 +3104,45 @@
         min-width: 2px;
     }
 
+    .katex .svg-align {
+        text-align: left;
+    }
+
+    /* sqrt 根号的 SVG 标记 width=400em，必须由 hide-tail 裁剪到单元格宽度，
+       缺失会导致根号渲染成数千像素宽、撑破表格与页面 */
+    .katex .hide-tail {
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+    }
+
+    .katex svg {
+        fill: currentColor;
+        stroke: currentColor;
+        fill-rule: nonzero;
+        fill-opacity: 1;
+        stroke-width: 1;
+        stroke-linecap: butt;
+        stroke-linejoin: miter;
+        stroke-miterlimit: 4;
+        stroke-dasharray: none;
+        stroke-dashoffset: 0;
+        stroke-opacity: 1;
+        display: block;
+        height: inherit;
+        position: absolute;
+        width: 100%;
+    }
+
+    .katex svg path {
+        stroke: none;
+    }
+
+    .katex .sqrt > .root {
+        margin-left: 0.2777777778em;
+        margin-right: -0.5555555556em;
+    }
+
     .katex .vbox {
         display: inline-flex;
         flex-direction: column;

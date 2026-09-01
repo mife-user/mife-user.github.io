@@ -803,6 +803,23 @@
 })();
 </script>
 
+<!-- 表格横向滚动：<table> 自身不是 block container，overflow-x 不生效，
+     用 div 包裹，超宽表格（如含 KaTeX 公式）在容器内滚动而不是撑破页面 -->
+<script>
+(function() {
+    document.querySelectorAll('.content table').forEach(function(t) {
+        if (t.closest('.katex') || (t.parentElement && t.parentElement.classList.contains('table-wrap'))) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        wrap.style.overflowX = 'auto';
+        wrap.style.maxWidth = '100%';
+        wrap.style.webkitOverflowScrolling = 'touch';
+        t.parentNode.insertBefore(wrap, t);
+        wrap.appendChild(t);
+    });
+})();
+</script>
+
 <!-- KaTeX 数学公式渲染 -->
 <script>
 (function() {
