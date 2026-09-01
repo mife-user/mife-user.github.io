@@ -164,5 +164,144 @@ CSP比赛我觉得是值得打的，相比于ACM肯定轻松点，相比蓝桥�
 
 - gcd()/lcm():返回最大公因数/最小公倍数，如果是GNU编译器，用__gcd().
 
+### 算法技术
+
+#### 前缀和数组，差分
+
+- 前缀和数组；数组前n个数值和的数组，通常用于数组区间求和，时间复杂度从$O(n^2)$到$O(n)$。
+  
+  满足：`b[i] = a[i] + b[i-1].`
+- 差分：将数组相邻元素之差存储到新数组中，通常用于求区间更改问题，对于数组a[]，在区间[l,r]所有元素加上x，只需在差分数组上的l处增加x，在r+1处减去x然后求前缀和。
+
+  满足：`b[i] = a[i] - a[i-1]`
+
+差分数组的前缀和为原数组，前缀和数组的差分也为原数组。
+
+经典例题：
+
+输入v头奶牛，第i个在m~n挤奶，需要q个桶，其中1<=q<=10,1<=m<=n<=1000,1<=v<=100,求需要的最小奶桶总数。
+
+输入：
+```bash
+3
+4 10 1
+8 13 3
+2 6 2
+```
+输出：
+```bash
+4
+```
+代码详解：
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+int a[1024];
+int m = 0;
+int k = 0,v = 0,j = 0;;
+int h = 0;
+int res = 0;
+int main(){
+  while(scanf("%d",&m) != EOF){
+    for(int i = 0;i < m;i++){
+        scanf("%d %d %d",&k,&v,&j);
+        a[k - 1] += j;
+        a[v] += -j;
+    }
+    for(int i = 0;i < 1000;i++){
+        h += a[i]; 
+        res = max(res,h);
+    }
+    printf("%d",res);
+  }
+  return 0;
+}
+```
+还有二维前缀和矩阵，二维差分矩阵，底层同样的逻辑，无需过多赘述。
+
+#### 二分
+二分查找：（利用有序的数据每次缩小一半查找数据）
+
+通过中间数大小对比不断更改左右边界，来查询数据。
+
+例：
+
+给定长度为n`(1<n<1e6）`的非降序列，元素取值范围在`(0-1e9)`之间，另有m`(1<=m<=1e4)`个询问值，取值与元素一致，对每个询问值找出最接近它的元素值（若有多个满足条件，输出最小的）。
+```
+输入：
+3
+2 5 8
+2
+10
+5
+输出：
+8
+5
+```
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+
+const int as = 1e6+1;
+const int bs = 1e4+1;
+int length = 0;
+int num = 0;
+int a[as];
+int b[bs];
+int main(){
+    while(scanf("%d",&length)){
+        for(int i = 0;i < length;i++){
+            scanf("%d",&a[i]);
+        }
+        scanf("%d",&num);
+        for(int i = 0;i < num;i++){
+            int aim = 0;
+            scanf("%d",&aim);
+            int l = 0,r = 0;
+            if(aim <= a[0]){
+                b[i] = a[0];
+                continue;
+            }else if(aim >= a[length-1]){
+                b[i] = a[length - 1];
+                continue;
+            }
+            while(l < r){
+                int mid = (l+r+1)>>2;
+                if(a[mid] > aim){
+                     r = mid;
+                }else if(a[mid] < aim){ 
+                    l = mid;
+                }else{
+                    l = mid;
+                    break;
+                }
+            }
+            b[i] = abs(a[l] - aim) > abs(a[l+1] - aim)?a[l+1]:a[l];
+        }
+        for(int i = 0;i < num;i++){
+            printf("%d",b[i]);
+            printf("\n");
+        }
+    }
+    return 0;
+}
+```
+
+STL中常用的二分函数：
+```c++
+bool binary_search(ForwardIt first,ForwardIt last,const T& value);
+/*
+用于判断元素是否在有序序列中
+first，last为迭代器范围（左闭右开）
+value为查找的值
+*/
+ForwardIt lower_bound(ForwardIt first,ForwardIt last,const T& value);
+/*
+用于查找到第一个不小于目标值的元素位置
+first，last为迭代器范围（左闭右开）
+value为查找值
+返回第一个>=value元素的迭代器，找不到则返回last，即末尾
+*/
+```
 
 

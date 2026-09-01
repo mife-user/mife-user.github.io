@@ -264,6 +264,24 @@ issueLabel = 'comments'
 
 **控制**: 左下角音乐按钮，支持播放/暂停
 
+### 5. 数学公式渲染 (KaTeX)
+**位置**: `footer.html`（加载脚本）+ `head.html`（内联 CSS）+ `static/js/katex*`
+
+**支持的语法**:
+- 行内公式：`$...$` 或 `\(...\)`
+- 块级公式：`$$...$$` 或 `\[...\]`
+
+**实现原理**:
+- 使用 KaTeX + auto-render 在浏览器端渲染（Hugo 原样输出 LaTeX 源码，不做构建时处理）
+- 与 Mermaid 相同的加载策略：**CDN 优先**（jsdelivr），失败回退到本地 `static/js/`
+- 页面检测到 `.content` 内有公式才加载 KaTeX，无公式页面零额外请求
+- 本地兜底文件：`static/js/katex.min.js`、`auto-render.min.js`、`katex.min.css`（内联于 head.html）、`static/js/fonts/`（20 个 woff2 字体）
+
+**⚠️ 注意事项**:
+- KaTeX 字体必须与 CSS 相对路径 `fonts/` 配套（已放置于 `static/js/fonts/`），缺失会显示方块
+- 正文 `$` 需与命令字符（`\`、`^` 等）配对才会被识别为公式，避免误判价格类文本
+- 添加新文章后本地验证：`hugo server` 打开含公式的文章页，公式渲染失败会以红色文本标出
+
 ---
 
 ## 🚨 已知问题与修复记录

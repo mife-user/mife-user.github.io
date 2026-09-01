@@ -40,7 +40,7 @@ themes/mife-theme/
     links/             # Friend links templates
     index.html         # Homepage
   assets/css/          # responsive.css
-static/                # Static files mapped to site root (images/, audio/)
+static/                # Static files mapped to site root (images/, audio/, js/)
 archetypes/            # Hugo content templates
 ```
 
@@ -49,6 +49,7 @@ archetypes/            # Hugo content templates
 - **All CSS is inline in `head.html`** `<style>` tags. **All JS is inline in `footer.html`** `<script>` tags. No external CSS/JS files.
 - **Tags format**: must use JSON array `tags: ["标签1", "标签2"]` in front matter — do NOT use YAML list format.
 - **Search**: Hugo template in `footer.html` embeds all posts + projects as a JS array at build time. Search is client-side only.
+- **Math**: KaTeX + auto-render rendered client-side (CDN-first, local `static/js/` fallback). Inline `$...$` / `\(...\)`, display `$$...$$` / `\[...\]`. CSS inlined in `head.html`, fonts at `static/js/fonts/`.
 - **i18n**: `data-zh` / `data-en` attributes on elements, toggled by JS in footer.html.
 - **Comments**: Utterances widget loaded in `partials/utterances-comments.html`, uses GitHub Issues with label `comments`.
 - **Drafts**: `draft: true` content is hidden in production builds. Set to `false` to publish.

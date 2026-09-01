@@ -802,3 +802,65 @@
         .catch(function() { /* 两个源都失败时静默，不影响页面其余功能 */ });
 })();
 </script>
+
+<!-- KaTeX 数学公式渲染 -->
+<script>
+(function() {
+    var katexCdnJs = 'https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js';
+    var renderCdnJs = 'https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js';
+    var katexLocalJs = '{{ "/js/katex.min.js" | relURL }}';
+    var renderLocalJs = '{{ "/js/auto-render.min.js" | relURL }}';
+    var rendered = false;
+
+    // 页面中存在行内/块级公式时才加载，避免无公式页面空耗请求
+    var container = document.querySelector('.content');
+    if (!container) return;
+    var html = container.innerHTML;
+    // $$…$$ / \(…\) / \[…\] 任意配对出现即视为有公式；$…$ 要求带命令字符（\ 或 ^），
+    // 避免误伤“价格 $5”这类普通美元符场景
+    var hasMath = /\$\$(?:(?!\$\$)[\s\S])*\$\$/.test(html) ||
+                  /\\\((?:(?!\\\))[\s\S])*\\\)/.test(html) ||
+                  /\\\[(?:(?!\\\])[\s\S])*\\\]/.test(html) ||
+                  /\$\\[A-Za-z]|\$\^/.test(html);
+    if (!hasMath) return;
+
+    function loadScript(src) {
+        return new Promise(function(resolve, reject) {
+            var s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = function() {
+                if (s.parentNode) s.parentNode.removeChild(s);
+                reject(new Error('failed to load: ' + src));
+            };
+            document.head.appendChild(s);
+        });
+    }
+
+    function renderMath() {
+        if (rendered || !window.katex || !window.renderMathInElement) return;
+        rendered = true;
+        try {
+            renderMathInElement(container, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: '$', right: '$', display: false }
+                ],
+                throwOnError: false,
+                errorColor: '#ff6b6b'
+            });
+        } catch (e) { /* 渲染失败不影响页面其余功能 */ }
+    }
+
+    // 依次加载 katex 核心与 auto-render，CDN 失败回退本地
+    loadScript(katexCdnJs)
+        .catch(function() { return loadScript(katexLocalJs); })
+        .then(function() { return loadScript(renderCdnJs); })
+        .catch(function() { return loadScript(renderLocalJs); })
+        .then(renderMath)
+        .catch(function() { /* 两个源都失败时静默 */ });
+})();
+</script>
+
