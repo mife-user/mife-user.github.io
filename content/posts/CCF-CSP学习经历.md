@@ -302,6 +302,143 @@ first，last为迭代器范围（左闭右开）
 value为查找值
 返回第一个>=value元素的迭代器，找不到则返回last，即末尾
 */
+ForwardIt upper_bound(ForwardIt first,ForwardIt last,const T& value);
+/*
+查找第一个大于目标值的元素位置
+返回第一个>value的元素的 迭代器
+*/
 ```
 
+#### 动态规划(DP)
+
+利用小问题的答案求解大问题，常采用*递推*或*记忆化搜索*实现
+
+- 重叠子问题：子问题是大问题的小版本
+- 最优性原理：大问题的最优解包含小问题的最优解
+- 无后效性原则：后续阶段不受前一阶段影响
+
+典型例题(打家劫舍 II)
+
+你是一个专业的小偷，计划偷窃沿街的房屋，每间房内都藏有一定的现金。这个地方所有的房屋都围成一圈 ，这意味着第一个房屋和最后一个房屋是紧挨着的。同时，相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警 。
+
+给定一个代表每个房屋存放金额的非负整数数组，计算你 在不触动警报装置的情况下 ，今晚能够偷窃到的最高金额。
+
+```
+输入：nums = [2,3,2]
+输出：3
+解释：你不能先偷窃 1 号房屋（金额 = 2），然后偷窃 3 号房屋（金额 = 2）, 因为他们是相邻的。
+```
+```c++
+/*
+ * @lc app=leetcode.cn id=213 lang=cpp
+ *
+ * [213] 打家劫舍 II
+ */
+
+// @lc code=start
+#include<bits/stdc++.h>
+using namespace std;
+class Solution {
+public:
+    int rob(vector<int>& nums) {
+        vector<int> money1(100,0);//不需要第一个
+        vector<int> money2(100,0);
+        int location = nums.size();
+        if(location == 1){
+            return nums[0];
+        }else if(nums.size() == 2){
+            return max(nums[0],nums[1]);
+        }
+        money1[1] = nums[1];
+        money2[1] = nums[0];
+        money2[0] = nums[0];
+        for(int i = 2;i < location;i++){
+            money1[i] = max(money1[i-1],money1[i-2]+nums[i]);
+            if(i == location-1){
+                money2[i] = money2[i-1];
+                break;
+            }
+            money2[i] = max(money2[i-1],money2[i-2] + nums[i]);
+        }
+        return max(money1[location-1],money2[location-1]);
+        
+    }
+};
+// @lc code=end
+```
+
+#### 深度优先搜索(DFS)
+
+一直遍历到头后从拐弯点继续,理论是栈实现，涉及递归。
+
+应用场景：
+- 图的连通性判断
+- 路径搜索
+- 组合问题...
+
+典型例题：
+按照国际象棋的规则，皇后可以攻击与之处在同一行或同一列或同一斜线上的棋子。
+
+n 皇后问题 研究的是如何将 n 个皇后放置在 n×n 的棋盘上，并且使皇后彼此之间不能相互攻击。
+
+给你一个整数 n ，返回所有不同的 n 皇后问题 的解决方案。
+
+每一种解法包含一个不同的 n 皇后问题 的棋子放置方案，该方案中 'Q' 和 '.' 分别代表了皇后和空位。
+```
+输入：n = 4
+输出：[[".Q..","...Q","Q...","..Q."],["..Q.","Q...","...Q",".Q.."]]
+解释：如上图所示，4 皇后问题存在两个不同的解法。
+```
+
+```c++
+/*
+ * @lc app=leetcode.cn id=51 lang=cpp
+ *
+ * [51] N 皇后
+ */
+
+// @lc code=start
+#include<bits/stdc++.h>
+using namespace std;
+class Solution {
+public:
+    vector<vector<string>> solveNQueens(int n) {
+        vector<bool> lie(n,false);
+        vector<bool> zh(2*n,false);
+        vector<bool> fh(2*n,false);
+        vector<vector<string>> res;
+        vector<string> map(n,string(n,'.'));
+        BFS(0,n,lie,zh,fh,res,map);
+        return res;
+    }
+    void BFS(int x,int n,
+        vector<bool> &l,vector<bool> &z,vector<bool> &f,
+        vector<vector<string>> &r,
+        vector<string> &now){
+        if(x == n){
+            r.push_back(now);
+            return;
+        }
+        for(int i = 0;i < n;i++){
+            if(l[i] || z[x+i] || f[x-i+n]){
+                continue;
+            }
+            now[x][i] = 'Q';
+            l[i] = true;
+            z[x+i] = true;
+            f[x-i+n] = true;
+            BFS(x+1,n,l,z,f,r,now);
+            l[i] = false;
+            z[x+i] = false;
+            f[x-i+n] = false;
+            now[x][i] = '.';
+        }
+
+    }
+};
+// @lc code=end
+```
+#### 广度优先搜索(BFS)
+
+类似洪水一样发散寻找，理论是队列实现。
 
