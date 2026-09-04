@@ -41,7 +41,7 @@ CSP比赛我觉得是值得打的，相比于ACM肯定轻松点，相比蓝桥�
   - 判空：que.empty();
 - priority queue(优先队列[堆]，本质为完全二叉树):
   - 构造：
-    - 小顶堆：`priority_queue<类型,vector<类型>,greater<类型>> pque;`
+    - 小顶堆：`priority_queue<类型,vector<类型>,greater<类型> pque;`
     - 大顶堆：`priority_queue<类型> pque`
     - 第一个参数：存储数据类型
     - 第二个参数：存储数据类型的容器
@@ -441,4 +441,98 @@ public:
 #### 广度优先搜索(BFS)
 
 类似洪水一样发散寻找，理论是队列实现。
+
+经典例题：
+在给定的 m x n 网格 grid 中，每个单元格可以有以下三个值之一：
+
+值 0 代表空单元格；
+值 1 代表新鲜橘子；
+值 2 代表腐烂的橘子。
+每分钟，腐烂的橘子 周围 4 个方向上相邻 的新鲜橘子都会腐烂。
+
+返回 直到单元格中没有新鲜橘子为止所必须经过的最小分钟数。如果不可能，返回 -1 。
+```
+输入：grid = [[2,1,1],[1,1,0],[0,1,1]]
+输出：4
+
+输入：grid = [[2,1,1],[0,1,1],[1,0,1]]
+输出：-1
+解释：左下角的橘子（第 2 行， 第 0 列）永远不会腐烂，因为腐烂只会发生在 4 个方向上。
+
+输入：grid = [[0,2]]
+输出：0
+解释：因为 0 分钟时已经没有新鲜橘子了，所以答案就是 0 。
+```
+```c++
+/*
+ * @lc app=leetcode.cn id=994 lang=cpp
+ *
+ * [994] 腐烂的橘子
+ */
+
+// @lc code=start
+#include<bits/stdc++.h>
+using namespace std;
+class Solution {
+public:
+    struct Node{
+        int X;
+        int Y;
+    };
+    int orangesRotting(vector<vector<int>>& grid) {
+        queue<Node> ready;    
+        int day = -1;
+        int oks = 0;
+        int M = grid.size();
+        int N = grid[0].size();
+        for(int i = 0;i < M;i++){
+            for(int j = 0;j < N;j++){
+                if(grid[i][j] == 2){
+                    ready.push({i,j});
+                }
+                if(grid[i][j] == 1){
+                    oks++;
+                }
+            }
+        }
+        if(oks == 0){
+            return 0;
+        }
+        while(!ready.empty()){
+            int nums = ready.size();
+            for(int i = 0;i < nums;i++){
+                Node n = ready.front();
+                if(n.X != 0 && grid[n.X - 1][n.Y] == 1){
+                    ready.push({n.X - 1,n.Y});
+                    grid[n.X-1][n.Y] = 2;
+                    oks--;
+                }//向上
+                if(n.X != (M - 1) && grid[n.X + 1][n.Y] == 1){
+                    ready.push({n.X + 1,n.Y});
+                    grid[n.X + 1][n.Y] = 2;
+                    oks--;
+                }//向下
+                if(n.Y != 0 && grid[n.X][n.Y - 1] == 1){
+                    ready.push({n.X,n.Y - 1});
+                    grid[n.X][n.Y - 1] = 2;
+                    oks--;
+                }//向左
+                if(n.Y != (N-1) && grid[n.X][n.Y + 1] == 1){
+                    ready.push({n.X,n.Y + 1});
+                    grid[n.X][n.Y + 1] = 2;
+                    oks--;
+                }//向右
+                ready.pop();
+            }
+            day++;
+        }
+        if(oks != 0){
+            return -1;
+        }
+        return day;
+    }
+};
+// @lc code=end
+// 很开心的是一次提交成功了😍
+```
 
