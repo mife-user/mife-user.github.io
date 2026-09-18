@@ -31,7 +31,7 @@ tags: ["linux"]
 - 后台运行且不受终端关闭影响（nohup）
 输出会重定向到nohup.out文件（默认）
 ```bash
-nohup /path/to/your/program &
+nohup /path/to/your/program > nohup.out 2>&1 &
 ```
 #### 作为系统服务管理（systemd）
 
