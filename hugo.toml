@@ -8,6 +8,8 @@ theme = 'mife-theme'
     startLevel = 2
     endLevel = 3
     ordered = false
+  [markup.goldmark.renderer]
+    unsafe = true
 
 [security]
   [security.funcs]
