@@ -1,6 +1,7 @@
 ---
 title: 'Mysql学习'
 date: 2026-09-17T19:22:53+08:00
+lastmod: 2026-09-23T13:28:04+08:00
 draft: false
 tags: ["mysql", "八股"]
 ---
@@ -32,10 +33,17 @@ mysql -h 127.0.0.1 -p 3306 -u root -p #传统命令行客户端,注意mysqlsh默
 mysqldump -u root -p mifi test --where="id > 1000" > test.sql #将mifi库中的test表中的id大于1000的数据导出到test.sql中
 mysql -u root -p mifi < test.sql #将表数据导入到mifi数据库中
 SOURCE /path/to/dump.sql; #登录后也可以USE XXX然后通过这个导入
+```
+进入后
+```bash
 \help
 \use xxx #使用xxx数据库
 \sql #使用sql语法
 \connect root@localhost #连接数据库
+show processlist; #查看当前mysql服务被多少客户端连接
+show variables like 'wait_timeout'; #查看空闲时长
+show variables like 'max_connections'; #查看最大连接数
+kill connection +6; #断开id为6的连接
 ```
 
 ## SQL
@@ -87,3 +95,53 @@ EXCEPT --用来查询差集
 ```
 
 ## 八股
+
+来自小林coding，讲的确实好，挺有趣的。🙂
+
+先看架构：
+```mermaid
+flowchart LR
+  subgraph DBDATA[存储引擎]
+    DB[Innodb]
+    ...
+  end
+  subgraph server
+    L[连接器] <--> H[缓存]
+    H --> J
+    subgraph J[解析器]
+    CF[词法解析] --> YF[语法解析]
+    YF --> YFT[语法树]
+    end
+    YFT --> YCL[预处理器]
+    YCL --> YH[优化器]
+    YH --> ZX[执行器]
+  end
+  ZX --> DBDATA
+```
+
+### 连接
+
+连接中用户权限不变，管理员修改不影响当前连接。连接有默认最大空闲时长，大于会断开（默认为八小时）。mysql采用TCP协议长连接，所以会出现长时间占用内存，解决方案：
+- 定期断开
+- 客户端主动重置:msyql有可以通过重置连接释放内存而不重连的办法
+
+缓存这个好像已经没有了（没什么用的原因）。
+
+解析器这里很像Go语言，表和其中字段存不存不在这里处理。
+
+执行SQL需要先预处理，后优化，最后执行。预处理阶段比如会将*改为实际表的字段等，优化器用来决定是否使用索引等，在最前面添加explain分析执行计划。
+
+经过不断询问ai，浅浅讲解下mysql底层B+树：
+
+大概长这样，一个索引构建一棵树，实际上各个节点还有槽用来快速在页中查找对应行，后续会介绍，可以话去看小林的，我主要是记点笔记方便自己看。先知道结构有：段，区，页，行即可，槽会指向某页中最小和最大的行（如果是非叶节点则会指向最小和最大页），其中都是有序的。
+```
+        根页（非叶节点，1页）
+         [10 | 50 | 100]
+        /      |      \
+   非叶页    非叶页    非叶页
+  [1|5]    [20|30]  [60|80]
+   / \       / \      / \
+叶页 叶页  叶页 叶页  叶页 叶页
+数据 数据  数据 数据  数据 数据
+```
+B+树特点就是用链表将不同分支的节点连接起来了，方便顺序查找。

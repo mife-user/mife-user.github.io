@@ -1,6 +1,7 @@
 ---
 title: 'Linux学习'
 date: 2026-08-17T13:25:04+08:00
+lastmod: 2026-08-17T13:25:04+08:00
 draft: false
 tags: ["linux"]
 ---

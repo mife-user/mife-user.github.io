@@ -1,6 +1,7 @@
 ---
 title: 'K8s学习'
 date: 2026-09-18T13:45:45+08:00
+lastmod: 2026-09-18T13:45:45+08:00
 draft: false
 tags: ["k8s"]
 ---

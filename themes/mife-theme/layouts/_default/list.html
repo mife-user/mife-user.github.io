@@ -10,6 +10,7 @@
             </h3>
             <p class="post-excerpt">{{ .Summary | truncate 150 }}</p>
             <a href="{{ .Permalink }}" class="read-more" data-zh="阅读更多 →" data-en="Read More →">阅读更多 →</a>
+            <div class="post-updated" data-zh="更新于 {{ .Lastmod.Format "2006-01-02" }}" data-en="Updated {{ .Lastmod.Format "2006-01-02" }}">更新于 {{ .Lastmod.Format "2006-01-02" }}</div>
         </article>
         {{ end }}
     </div>

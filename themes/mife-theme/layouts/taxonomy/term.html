@@ -17,6 +17,7 @@
             <h3 class="post-title">
                 <a href="{{ .Permalink }}">{{ .Title }}</a>
             </h3>
+            <div class="post-updated" data-zh="更新于 {{ .Lastmod.Format "2006-01-02" }}" data-en="Updated {{ .Lastmod.Format "2006-01-02" }}">更新于 {{ .Lastmod.Format "2006-01-02" }}</div>
         </article>
         {{ end }}
     </div>

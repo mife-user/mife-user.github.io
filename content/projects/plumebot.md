@@ -1,6 +1,7 @@
 ---
 title: PlumeBot — 有记忆、有人格的 QQ 赛博群友
 date: 2026-08-24T12:00:00+08:00
+lastmod: 2026-08-24T12:00:00+08:00
 draft: false
 tags: ["Go", "AI", "Eino", "Agent", "QQ机器人", "OneBot", "SQLite", "DDD"]
 ---

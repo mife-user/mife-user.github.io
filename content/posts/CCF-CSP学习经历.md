@@ -1,6 +1,7 @@
 ---
 title: 'CCF CSP学习经历'
 date: 2026-08-26T22:25:36+08:00
+lastmod: 2026-08-26T22:25:36+08:00
 draft: false
 tags: ["CCF", "CSP","竞赛"]
 ---
