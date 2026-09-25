@@ -48,6 +48,12 @@
         "url": "https://pkg.go.dev",
         "desc": "Go 包文档中心，查询任何 Go 模块的 API 文档。",
         "icon": "🔍"
+      },
+      {
+        "title": "producthunt",
+        "url": " https://www.producthunt.com/",
+        "desc": "独立开发者的“新品发布会”",
+        "icon": "📑"
       }
     ]
   },

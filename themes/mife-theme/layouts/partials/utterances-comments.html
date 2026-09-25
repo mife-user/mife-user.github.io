@@ -83,8 +83,9 @@
     const githubUsername = '{{ $githubUsername }}';
     const repo = '{{ $repo }}';
     const label = '{{ $issueLabel }}';
-    const pageTitle = '{{ .Title | htmlEscape }}';
-    const pageUrl = '{{ .Permalink }}';
+    // 默认用 URL 路径作为 issue-term（每篇文章/项目各自独立 Issue）；
+    // 页面可在 front matter 里设置 commentIssue 来固定挂接某个 Issue（如留言板）
+    const issueTerm = '{{ with .Params.commentIssue }}{{ . }}{{ else }}pathname{{ end }}';
 
     const utterancesContainer = document.getElementById('utterances-container');
     const spinner = utterancesContainer.querySelector('.loading-spinner');
@@ -95,7 +96,7 @@
     script.async = true;
     script.crossOrigin = 'anonymous';
     script.setAttribute('repo', `${githubUsername}/${repo}`);
-    script.setAttribute('issue-term', 'title');
+    script.setAttribute('issue-term', issueTerm);
     script.setAttribute('label', label);
     script.setAttribute('theme', 'github-dark');
 

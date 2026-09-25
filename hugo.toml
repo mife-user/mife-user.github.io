@@ -49,3 +49,7 @@ theme = 'mife-theme'
     name = '收藏'
     url = '/favorites/'
     weight = 5
+  [[menu.main]]
+    name = '留言板'
+    url = '/guestbook/'
+    weight = 6
