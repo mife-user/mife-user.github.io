@@ -83,9 +83,10 @@
     const githubUsername = '{{ $githubUsername }}';
     const repo = '{{ $repo }}';
     const label = '{{ $issueLabel }}';
-    // 默认用 URL 路径作为 issue-term（每篇文章/项目各自独立 Issue）；
-    // 页面可在 front matter 里设置 commentIssue 来固定挂接某个 Issue（如留言板）
-    const issueTerm = '{{ with .Params.commentIssue }}{{ . }}{{ else }}pathname{{ end }}';
+    // 默认：用文章标题作为 issue-term（每篇 post/project 建一个 Issue，标题即文章题目）；
+    // 覆盖：front matter 设置 commentIssue 时固定挂接指定编号的 Issue（如留言板 Issue #5）
+    const hasCommentIssue = '{{ with .Params.commentIssue }}true{{ else }}false{{ end }}' === 'true';
+    const issueTerm = {{ with .Params.commentIssue }}{{ . }}{{ else }}{{ .Title | jsonify | safeJS }}{{ end }};
 
     const utterancesContainer = document.getElementById('utterances-container');
     const spinner = utterancesContainer.querySelector('.loading-spinner');
@@ -96,7 +97,12 @@
     script.async = true;
     script.crossOrigin = 'anonymous';
     script.setAttribute('repo', `${githubUsername}/${repo}`);
-    script.setAttribute('issue-term', issueTerm);
+    if (hasCommentIssue) {
+        // 固定挂接指定编号的 Issue（如留言板挂接 Issue #5）
+        script.setAttribute('issue-number', issueTerm);
+    } else {
+        script.setAttribute('issue-term', issueTerm);
+    }
     script.setAttribute('label', label);
     script.setAttribute('theme', 'github-dark');
 
