@@ -8,11 +8,13 @@ tags: ["go", "八股"]
 
 # 前言
 
-希望有一天能够真正有机会和一群志同道合人的人为梦想努力。
+希望有一天能够真正有机会和一群志同道合人为梦想努力。
 
 哎呀我去，这玩意怎么这么难，我去了。
 
 至于为什么文章这么长，一方面是有些部分写的过于具体了，比如语法分析那里写了个例子，总的来说还是个总结的文章
+
+有些例题让ai总结了，如果有人有更好的例题欢迎提pr或评论。
 
 # 准备工作
 
@@ -420,12 +422,20 @@ arr[0:3] or slice[0:3]
 slice := []int{1, 2, 3}
 slice := make([]int, 10)
 ```
+其在runtime内部大致是：
+```go
+type slice struct {
+    array unsafe.Pointer // 指向底层数组的第一个元素
+    len   int            // 当前长度
+    cap   int            // 当前容量
+}
+```
 1. 使用下标：通过下标创建切片最原始也最接近汇编语言的方式，使用下标初始化切片不会拷贝原数组或者原切片中的数据，它只会创建一个指向原数组的切片结构体，所以修改新切片的数据也会修改原切片
 
 ```go
 func newSlice() []int {
 	arr := [3]int{1, 2, 3}
-	slice := arr[0:1]
+	slice := arr[1:2]//这里array指向的底层数组则是arr[1]
 	return slice
 }
 ```
@@ -528,9 +538,90 @@ func getSub() []int {
 
 扩容具体实现简要讲下，函数：`func growslice(et *_type, old slice, cap int) slice`；cap是期望扩容的容量，当cap > old的cap的两倍，则新容器的容量直接等于cap否则判断：当old长度小于1024则新容量为old的两倍，大于则循环增加25%直至大于期望容量。
 
+有个地方注意下：其a[low:high:max],必须0≤low≤high≤max≤cap(a)。
+
+#### nil slice和empty slice
+
+```go
+var a []int        // nil slice
+b := []int{}       // 非 nil 空切片
+c := make([]int, 0) // 非 nil 空切片
+```
+
 #### 拷贝切片
 
 分为运行时与非运行时，但是二者都会将整块内存的内容拷贝到目标的内存区域中。所有需要注意性能
+
+#### 考题
+
+<details>
+<summary>切片考题</summary>
+1. 切片底层结构？  
+答：指向底层数组的指针 + len + cap。64 位下 slice header 通常 24 字节。
+
+2. len 和 cap 区别？  
+答：len 是当前可访问长度；cap 是从切片起始位置到底层数组末尾的容量。
+
+3. nil 切片和空切片区别？  
+答：nil 切片 array=nil，JSON 为 `null`；空切片非 nil，JSON 为 `[]`。两者都能 append、len、range。
+
+4. 数组和切片区别？  
+答：数组定长、值类型，赋值复制整个数组；切片变长，赋值只复制 slice header，底层数组共享。
+
+5. `make([]int,2,5)` 的 len/cap？  
+答：len=2，cap=5。可直接访问前 2 个元素，但可通过 `s[:5]` 扩展到 5 个。
+
+6. `s[low:high]` 的 len/cap？  
+答：len=`high-low`，cap=`cap(s)-low`。新切片仍共享底层数组。
+
+7. 三索引切片 `s[l:h:m]` 作用？  
+答：限制新切片 cap=`m-l`，防止 append 覆盖原切片后面的元素。
+
+8. append 底层行为？  
+答：容量够就写底层数组，返回 len 增加的新 header；容量不够就分配新数组、复制、追加。
+
+9. 为什么必须 `s = append(s, x)`？  
+答：append 返回新 slice header，len/cap/底层数组都可能变，不接收返回值原变量不会更新。
+
+10. 切片扩容策略？  
+答：小容量通常翻倍，大容量约 1.25 倍增长；实际 cap 受版本和内存对齐影响，不保证精确值。
+
+11. `a:=[]int{1,2,3,4}; b:=a[:2]; b=append(b,99)` 输出？  
+答：`a=[1 2 99 4]`，`b=[1 2 99]`。b 的 cap=4，append 容量够，直接覆盖 `a[2]`。
+
+12. 改成 `b:=a[:2:2]; b=append(b,99)` 呢？  
+答：`a=[1 2 3 4]`，`b=[1 2 99]`。三索引把 b 的 cap 限制为 2，append 触发扩容，不再覆盖 a。
+
+13. 切片传参是值传递还是引用传递？  
+答：值传递，复制 slice header，底层数组共享。函数内改元素外部可见，改 header 外部不可见。
+
+14. `func f(s []int){s=append(s,4)}; s:=make([]int,3,5); f(s)` 后 s？  
+答：s 仍是 `[0 0 0]`，len=3，cap=5。函数内 append 写到了底层数组，但外部 len 没变。
+
+15. copy 规则？  
+答：复制 `min(len(dst), len(src))` 个元素，不扩容，不改变 dst 的 len/cap。
+
+16. `s:=make([]int,0,5); copy(s, []int{1,2,3})` 会复制吗？  
+答：不会，复制 0 个。copy 看 `len(dst)`，此时 len=0，cap 再大也没用。
+
+17. 如何完整复制切片？是深拷贝吗？  
+答：`make+copy`、`append([]T(nil), s...)`、`slices.Clone`。都是浅拷贝，元素若为指针/切片/map 仍共享底层对象。
+
+18. 大数组小切片有什么问题？  
+答：`small := big[:1]` 仍引用整个 big 底层数组，导致大数组无法 GC。可用 `append([]T(nil), big[:1]...)` 切断。
+
+19. 切片删除元素怎么写？  
+答：`s = append(s[:i], s[i+1:]...)`。会修改底层数组；元素含指针时，最好把末尾置零防内存泄漏。
+
+20. 切片并发安全吗？能做 map key 吗？  
+答：并发不安全；切片不可比较，不能做 map key。
+
+21. range 切片时 append 会影响遍历次数吗？  
+答：不会。range 开始时复制 slice header，遍历次数由当时的 len 决定。
+
+22. 切片越界规则？  
+答：`s[low:high]` 要求 `0 <= low <= high <= cap(s)`，不是 `len(s)`，所以可以 `s[:cap(s)]` 扩展 len 到 cap。
+</details>
 
 ### 哈希表
 
