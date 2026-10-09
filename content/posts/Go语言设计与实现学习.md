@@ -1,7 +1,7 @@
 ---
 title: 'Go语言设计与实现学习'
 date: 2026-09-17T13:16:18+08:00
-lastmod: 2026-09-28T15:33:18+08:00
+lastmod: 2026-10-9T13:55:18+08:00
 draft: false
 tags: ["go", "八股"]
 ---
@@ -800,3 +800,72 @@ len 是元素个数；cap 不适用。
 五、背诵版一句话
 Go map 经典结构是 hmap + bmap，桶内 8 槽，冲突挂溢出桶；负载因子 6.5 触发翻倍扩容，溢出桶过多触发等量扩容，扩容是渐进式；map 非并发安全，遍历随机，元素不可寻址，key 必须可比较，删除不缩容；读多写少可用 sync.Map。Go 1.24 后底层改为 Swiss Table。
 </details>
+
+### 字符串
+
+#### 结构
+
+首先是只读的，所以需要避免改动带来的性能消耗。有Data和Len字段。以通过在 string 和 []byte 类型之间反复转换实现修改。
+
+#### 拼接
+
+使用+拼，如果字符串数量<=5,则会调用concatstring{2，3，4，5}等函数，超过了则使用runtime.concatstrings传入数组切片。
+
+#### 类型转换
+
+开销大，注意runtime.slicebytetostring等函数，因为字节数组转换为字符串需要使用该函数，根据传入的缓冲区大小决定是否需要为新字符串分配一片内存空间，然后通过 runtime.memmove 将原 []byte 中的字节全部复制到新的内存空间中。想要将字符串转换成 []byte 类型时，需要使用 runtime.stringtoslicebyte 函数（如果有缓冲区则将其内容存储[]byte，否则拷贝字符串内容到[]byte.）
+
+#### 考题
+
+<details>
+<summary>字符串考题</summary>
+1. string 底层结构？  
+答：一个指向字节数组的指针 + 长度，64 位下 16 字节。本质是只读的字节序列，没有 cap。
+
+2. 为什么 string 设计成不可变？  
+答：可以多处安全共享而不用拷贝；可安全做 map key、比较和常量折叠；天然并发安全。
+
+3. string 和 []byte 区别？  
+答：string 只读、可比较、可做 map key；[]byte 可写、不可比较。两者互转都会拷贝。
+
+4. `string(b)` 和 `[]byte(s)` 的开销？  
+答：都是 O(n) 拷贝，分别调用 runtime.slicebytetostring 和 runtime.stringtoslicebyte，根据传入缓冲区大小决定是否新分配内存再用 memmove 复制。
+
+5. 有零拷贝转换吗？  
+答：标准库没有。可以用 unsafe 重解释指针（unsafe.String / unsafe.SliceData）实现零拷贝，但结果与原数据共享内存，必须保证只读，否则破坏 string 不可变的前提。
+
+6. `+` 拼接底层怎么走？  
+答：个数 ≤5 时编译器调用 concatstring2~5 在栈上拼；更多时调用 runtime.concatstrings 传入切片，先遍历求总长，再一次性分配并拷贝。
+
+7. 为什么循环里 `s += x` 很慢？  
+答：每轮都重新分配并拷贝整个字符串，复杂度 O(n²)。应该改用 strings.Builder。
+
+8. strings.Builder 为什么快？  
+答：内部是 []byte，WriteString 用 copy 追加，只在扩容时重新分配；String() 用 unsafe 把内部 []byte 零拷贝转成 string。它不能被复制，复制会 panic。
+
+9. `len(s)` 是字符数吗？  
+答：不是，是字节数。一个中文 UTF-8 字符占 3 字节，emoji 可能 4 字节。字符数要用 utf8.RuneCountInString。
+
+10. `s[0]` 和 `range s` 有什么区别？  
+答：`s[i]` 取第 i 个字节（byte）；range 按 UTF-8 解码，每次给出 rune 和该字符起始的字节下标。
+
+11. 子串 `s[i:j]` 会拷贝吗？  
+答：不会，新 string 与原 string 共享底层字节数组。截取大字符串的一小段会让整块内存无法被 GC，可用 strings.Clone（Go 1.18+）切断。
+
+12. string 能比较、能做 map key 吗？  
+答：能。`==` 按字节比较，结果稳定；string 可比较所以可做 map key，[]byte 不行。
+
+13. string 是值类型还是引用类型？  
+答：值类型。赋值和传参复制的是 header（指针 + 长度），底层字节数组共享且只读。
+
+14. 修改字符串的正确姿势？  
+答：转成 []byte 或 []rune，改完再转回 string。[]byte 按下标改字节，[]rune 按下标改字符，两者下标含义不同。
+
+15. 大量拼接选谁？  
+答：strings.Builder（只追加、无格式）> bytes.Buffer（可读可写）> fmt.Sprintf（走反射和接口，慢）> 循环 `+`（最慢）。元素个数已知时用 strings.Join。
+
+16. 什么时候 `[]byte` 转 string 不分配？  
+答：只有编译器能证明转换结果不逃逸、且属于临时用途时（如 `m[string(b)]` 查找、字符串比较、拼接中间量）才免分配。这是编译器优化，不是语言保证。
+</details>
+
+> ⚠️ 一句话背诵：string 是只读的字节序列（指针 + 长度），与 []byte 互转必然拷贝；`+` 少量拼走 concatstringN、大量走 concatstrings；高频拼接用 strings.Builder；子串不拷贝会拖住原内存，需要时用 strings.Clone 切断。
