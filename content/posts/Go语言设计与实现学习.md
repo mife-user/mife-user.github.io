@@ -869,3 +869,14 @@ Go map 经典结构是 hmap + bmap，桶内 8 槽，冲突挂溢出桶；负载�
 </details>
 
 > ⚠️ 一句话背诵：string 是只读的字节序列（指针 + 长度），与 []byte 互转必然拷贝；`+` 少量拼走 concatstringN、大量走 concatstrings；高频拼接用 strings.Builder；子串不拷贝会拖住原内存，需要时用 strings.Clone 切断。
+
+### 函数调用
+
+先看看C语言，在函数my_function调用前，main函数将其两个参数存储到edi和esi寄存器，调用时会将edi和esi的数据存储到eax和edx寄存器中然后计算其和，调用后所以寄存器eax传递返回值，main函数将其返回值存储到栈上的i变量中。
+
+当入参过多时（比如增加到八个时），前6个参数所以edi，esi，edx，ecx，r8d和r9d六个寄存器传递，且会先为参数传递申请栈空间，而最后二个参数会使用栈传递参数。从右到左的顺序，然后通过call my_function调用函数my_function。
+
+rbp存储函数调用栈的基址指针，rsp存储main函数调用栈结束的位置，其两个寄存器共同表示了函数的栈空间。
+
+my_function会将寄存器的全部数据先转移到栈上，然后利用eax寄存器返回数据。由于只使用一个寄存器存储返回值，使用C语言无法同时返回多个值。
+
