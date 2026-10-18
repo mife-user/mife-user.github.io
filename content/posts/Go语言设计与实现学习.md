@@ -1,7 +1,7 @@
 ---
 title: 'Go语言设计与实现学习'
 date: 2026-09-17T13:16:18+08:00
-lastmod: 2026-10-17T12:19:18+08:00
+lastmod: 2026-10-18T14:54:18+08:00
 draft: false
 tags: ["go", "八股"]
 ---
@@ -961,3 +961,106 @@ $ go run main.go
 可以了解先go的unsafe包，讲解下unsafe.pointer，他可以和任意指针类型转换，但是不可以进行计算，将其转换为uintptr即可进行地址计算。由于int在64为系统占8字节，所以按8进行偏移。用unsafe包是危险的。
 
 可能会疑惑汇编中MOVQ "".ms+8(SP), AX这些是值将什么移动到什么，实际上这个根据电脑的系统决定，比如64位上意思就是：：从内存地址 SP + 8 处，读取 8 个字节的数据，并存入到 CPU 寄存器 AX 中。
+
+### 接口
+
+#### 概述
+
+接口本质就是一个新的中间层，实现定义与具体实现分离，用于解耦。比如sql就是，无需关注内部是mysql，postgresql还是sqlite，只需关注sql本身。
+
+像java和C#的接口不仅可以定义方法签名还可以定义变量，变量可以直接在实现接口的类中使用。而java需要implements关键字显示指定实现了什么接口，而go不需要，很显然的是，go一个实现可能对应不同接口，也就是鸭子类型，会叫的就是鸭子。只需要函数名称，入参与出参一致即可，这就是隐式接口。
+
+接口本身也是Go语言中的一种类型，go有带方法的和不带方法的interface{}
+
+Go语言使用 runtime.iface 表示第一种接口，使用 runtime.eface 表示第二种不包含任何方法的接口 interface{}。而interface[]并不像C语言的void *表示任意类型，而是单独的类型。所以在函数传参时实际上会将其转换为interface{}类型。
+
+指针和接口这方面可以看到两种不同的方式：
+
+```go
+type Duck interface{
+    Walk()
+}
+type Cat struct{}
+
+func(c *Cat) Walk(){
+
+}
+//and
+func(c Cat) Walk(){
+
+}
+```
+
+两种实现方式不可以同时存在，具体区别就是注入实现的时候是所以结构体还是结构体指针：
+
+```go
+type Cat struct {}
+type Duck interface {
+    Quack()
+}
+
+func (c  Cat) Quack {}  // 使用结构体实现接口
+func (c *Cat) Quack {}  // 使用结构体指针实现接口
+
+var d Duck = Cat{}      // 使用结构体初始化变量
+var d Duck = &Cat{}     // 使用结构体指针初始化变量
+```
+||结构体实现接口|结构体指针实现接口|
+|:--:|:--:|:--:|
+|结构体初始化变量|通过|不通过|
+|结构体指针初始化变量|通过|通过|
+
+原理：当使用结构体实现，指针初始化时，调用时相当于C的->，可以隐式获取对应方法。总而言之，因为go永远是值拷贝，如果是结构体实现则拷贝结构体，如果是指针实现则拷贝指针。当直接实现时其*Cat 的方法集包含 Quack(),Cat 的方法集不包含 Quack()，而结构体实现时二者都有。
+
+```go
+type Cat struct {
+    Name string
+}
+
+func (c Cat) Quack() {
+    c.Name = "changed"
+}
+```
+
+|调用|编译器实际做的|拷贝什么|方法里改 c.Name 会影响外面吗|
+|:--:|:--:|:--:|:--:|
+|c:=Cat{};c.Quack()|c.Quack()|拷贝整个 Cat 值|不会|
+|c:=&Cat{};c.Quack()|(*c).Quack()|先解引用得到 Cat，再拷贝整个 Cat 值|不会|
+
+```go
+func (c *Cat) Quack() {
+    c.Name = "changed"
+}
+```
+
+|调用|编译器实际做的|拷贝什么|方法里改 c.Name 会影响外面吗|
+|:--:|:--:|:--:|:--:|
+|c := Cat{}; c.Quack()|(&c).Quack()|拷贝 &c 这个指针值|会，改的是原变量 c|
+|c := &Cat{}; c.Quack()|c.Quack()|拷贝指针 c 的值|会，改的是指针指向的同一个 Cat|
+
+ok，看到这里我邮电头皮发麻了，不过多看几遍你就懂了，反正主要变的就是接口用什么赋值，实现用指针还是值。只是赋值给接口时，不可以当实现用接口而赋值用值，这个目的是为了避免：
+```go
+func (t *T) SetName(s string) {
+    t.Name = s
+}//这个方法的意思是：“改我指向的那个 T”
+var i I = T{}   // 假设允许
+i.SetName("x")  // 改的是谁？
+```
+这里i是T的副本，而T中表明了可能更改T的值，那么i是无法更改原本的值的，为了避免歧义，go选址不允许。
+
+#### 数据结构
+
+Go语言按照是否包含一组方法将接口分为了两类：
+- runtime.iface表示包含方法
+- runtime.eface表示不包含方法
+
+```go
+type eface struct { // 16 字节
+	_type *_type
+	data  unsafe.Pointer
+}
+type iface struct { // 16 字节
+	tab  *itab
+	data unsafe.Pointer
+}
+```
