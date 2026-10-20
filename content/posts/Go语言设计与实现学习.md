@@ -976,6 +976,7 @@ Go语言使用 runtime.iface 表示第一种接口，使用 runtime.eface 表示
 
 指针和接口这方面可以看到两种不同的方式：
 
+
 ```go
 type Duck interface{
     Walk()
@@ -1064,3 +1065,106 @@ type iface struct { // 16 字节
 	data unsafe.Pointer
 }
 ```
+
+首先可以看到无方法的eface在改为了_type，这是Go语言类型运行时的表示：
+```go
+type _type struct {
+	size       uintptr //存储了类型占用的内存空间，为内存空间的分配提供信息
+	ptrdata    uintptr
+	hash       uint32 //快速确定类型是否相等
+	tflag      tflag
+	align      uint8
+	fieldAlign uint8
+	kind       uint8
+	equal      func(unsafe.Pointer, unsafe.Pointer) bool //判断当前类型的多个对象是否相等
+	gcdata     *byte
+	str        nameOff
+	ptrToThis  typeOff
+}
+```
+然后看有方法的itab:
+```go
+type itab struct { // 32 字节
+	inter *interfacetype
+	_type *_type
+	hash  uint32 //hash 是对 _type.hash 的拷贝，用于快速判断是否与具体类型一致
+	_     [4]byte
+	fun   [1]uintptr //动态大小的数组，它是一个用于动态派发的虚函数表，存储函数指针。
+}
+```
+其中inter个_type用于表示类型。
+
+#### 类型转换
+
+依旧看Duck的接口，上面有。很显然可以知道会有的过程：
+- 初始化Cat
+- 赋值转换
+- 调用接口方法
+
+1. cat初始化：
+   ```go
+    LEAQ	type."".Cat(SB), AX                ;; AX = &type."".Cat
+    MOVQ	AX, (SP)                           ;; SP = &type."".Cat
+    CALL	runtime.newobject(SB)              ;; SP + 8 = &Cat{}
+    MOVQ	8(SP), DI                          ;; DI = &Cat{}
+    MOVQ	$6, 8(DI)                          ;; StringHeader(DI.Name).Len = 6
+    LEAQ	go.string."draven"(SB), AX         ;; AX = &"draven"
+    MOVQ	AX, (DI)                           ;; StringHeader(DI.Name).Data = &"draven"
+   
+   ```
+直接用书：
+1. 获取 Cat 结构体类型指针并将其作为参数放到栈上；
+2. 通过 CALL 指定调用 runtime.newobject 函数，这个函数会以 Cat 结构体类型指针作为入参，分配一片新的内存空间并将指向这片内存空间的指针返回到 SP+8 上；
+3. SP+8 现在存储了一个指向 Cat 结构体的指针，我们将栈上的指针拷贝到寄存器 DI 上方便操作；
+4. 由于 Cat 中只包含一个字符串类型的 Name 变量，所以在这里会分别将字符串地址 &"draven" 和字符串长度 6 设置到结构体上，最后三行汇编指令等价于 cat.Name = "draven"；
+
+转换过程：
+
+```go
+LEAQ	go.itab.*"".Cat,"".Duck(SB), AX    ;; AX = *itab(go.itab.*"".Cat,"".Duck)
+MOVQ	DI, (SP)                           ;; SP = AX
+```
+
+我们知道了iface结构体一个表示类型一个指向数据，，这段代码将编译期间生成的itab结构体复制到SP上:
+![iface转换](/images/iface转换.png)
+
+看到 SP ~ SP+16 共同组成了 runtime.iface 结构体，其中*Cat相当于指向数据的指针。实际调用：
+```go
+CALL    "".(*Cat).Quack(SB)                ;; SP.Quack()
+```
+这里Go编译器在编译期间将动态派发的发给发调用改为目标方法的直接调用以减少性能开销，如果禁用编译器优化就可以看到动态派发过程。
+
+前面是指针赋值，如果通过值赋值给接口将会在栈上初始化Cat，而原本用地址在栈上只有个指针指向堆中的Cat。
+
+其类型转换回调用runtime.convT2I函数，回根据类型申请内存空间并将elem指针的内容拷贝到目标内存中：
+
+```go
+func convT2I(tab *itab, elem unsafe.Pointer) (i iface) {
+	t := tab._type
+	x := mallocgc(t.size, t, true)
+	typedmemmove(t, x, elem)
+	i.tab = tab
+	i.data = x
+	return
+}
+```
+先看图：
+![值赋值iface](/images/值赋值iface.png)
+可以看到是先弄个指针指向Cat，然后将类型赋值到栈顶，然后调用convT2I函数，这是函数返回前的栈示意图（其中的入参还没有消除），理解其unsafe.pointer是：
+```go
+LEAQ	""..autotmp_1+32(SP), AX           ;; AX = &(SP+32) = &Cat{Name: "draven"}
+MOVQ	AX, 8(SP)                          ;; SP + 8 = AX
+```
+先用LEAQ计算出Cat的地址放AX中，然后将其存放在8(SP)，于是出现了unsafe.pointer,注意这里的SP不是这个图，这个图是函数调用前更改了SP的，现在SP应该是蓝色的itab和黄色的*Cat之间。
+
+调用：
+```go
+MOVQ	16(SP), AX ;; AX = &(go.itab."".Cat,"".Duck)
+MOVQ	24(SP), CX ;; CX = &Cat{Name: "draven"}
+MOVQ	24(AX), AX ;; AX = AX.fun[0] = Cat.Quack
+MOVQ	CX, (SP)   ;; SP = CX
+CALL	AX         ;; CX.Quack()
+```
+重点看MOVQ 24(AX), AX，这里不是说在16(SP)在偏移24，而是说将16(SP)的itab结构体在取Cat.Quack方法指针作为 CALL 指令调用时的参数。即接口变量的第 24 字节是 itab.fun 数组开始的位置。
+
+#### 类型断言
