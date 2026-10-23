@@ -1168,3 +1168,53 @@ CALL	AX         ;; CX.Quack()
 重点看MOVQ 24(AX), AX，这里不是说在16(SP)在偏移24，而是说将16(SP)的itab结构体在取Cat.Quack方法指针作为 CALL 指令调用时的参数。即接口变量的第 24 字节是 itab.fun 数组开始的位置。
 
 #### 类型断言
+
+非空接口，将Duck转换为Cat结构体的过程：
+```go
+func main() {
+	var c Duck = &Cat{Name: "draven"}
+	switch c.(type) {
+	case *Cat:
+		cat := c.(*Cat)
+		cat.Quack()
+	}
+}
+```
+变量初始化：
+```go
+00000 TEXT	"".main(SB), ABIInternal, $32-0
+...
+00029 XORPS	X0, X0
+00032 MOVUPS	X0, ""..autotmp_4+8(SP)
+00037 LEAQ	go.string."draven"(SB), AX
+00044 MOVQ	AX, ""..autotmp_4+8(SP)
+00049 MOVQ	$6, ""..autotmp_4+16(SP)
+```
+Cat 结构体初始化在 SP+8 ~ SP+24 上.
+
+转换：
+```go
+00058 CMPL  go.itab.*"".Cat,"".Duck+16(SB), $593696792
+                                        ;; if (c.tab.hash != 593696792) {
+00068 JEQ   80                          ;;
+00070 MOVQ  24(SP), BP                  ;;      BP = SP+24
+00075 ADDQ  $32, SP                     ;;      SP += 32
+00079 RET                               ;;      return
+                                        ;; } else {
+00080 LEAQ  ""..autotmp_4+8(SP), AX     ;;      AX = &Cat{Name: "draven"}
+00085 MOVQ  AX, (SP)                    ;;      SP = AX
+00089 CALL  "".(*Cat).Quack(SB)         ;;      SP.Quack()
+00094 JMP   70                          ;;      ...
+                                        ;;      BP = SP+24
+                                        ;;      SP += 32
+                                        ;;      return
+                                        ;; }
+```
+将目标类型的hash与接口变量的itab.hash比较，相同则表示为同一类型。
+
+转到 0080 所在的分支完成类型转换：
+- 获取 SP+8 存储的 Cat 结构体指针；
+- 将结构体指针拷贝到栈顶；
+- 调用 Quack 方法；
+- 恢复函数的栈并返回；
+
