@@ -1,8 +1,8 @@
 ---
 title: 'GO语言库包学习'
 date: 2026-09-03T13:39:51+08:00
-lastmod: 2026-09-03T13:39:51+08:00
-draft: true
+lastmod: 2026-10-27T22:39:51+08:00
+draft: false
 tags: ["go"]
 ---
 
@@ -170,4 +170,53 @@ Resolver 提供与包级函数同名的方法（如 `resolver.LookupHost`），�
 | `LookupAddr(addr string) ([]string, error)` | 反向解析，IP → 域名 |
 | `LookupCNAME(host string) (string, error)` | 查询规范域名 |
 | `LookupMX` / `LookupNS` / `LookupTXT` / `LookupSRV` | 查询各类 DNS 记录 |
+
+# tls
+
+## 包级方法
+
+|函数|作用|
+|:--:|:--:|
+|func tls.DialWithDialer(dialer *net.Dialer, network string, addr string, config *tls.Config) (*tls.Conn, error)| 创建带超时的tls连接|
+
+# smtp
+
+## 结构体
+
+### Client
+
+```go
+type Client struct {
+	// Text is the textproto.Conn used by the Client. It is exported to allow for
+	// clients to add extensions.
+	Text *textproto.Conn
+	// keep a reference to the connection so it can be used to create a TLS
+	// connection later
+	conn net.Conn
+	// whether the Client is using TLS
+	tls        bool
+	serverName string
+	// map of supported extensions
+	ext map[string]string
+	// supported auth mechanisms
+	auth       []string
+	localName  string // the name to use in HELO/EHLO
+	didHello   bool   // whether we've said HELO/EHLO
+	helloError error  // the error from the hello
+}
+```
+
+|函数|作用|
+|:--:|:--:|
+|func (c *smtp.Client) Auth(a smtp.Auth) error|认证|
+|func (c *smtp.Client) Mail(from string) error|设置邮箱发送者地址|
+|func (c *smtp.Client) Rcpt(to string) error|设置邮箱接受者地址|
+|func (c *smtp.Client) Data() (io.WriteCloser, error)|启动写入数据返回写入器|
+|func (c *smtp.Client) Quit() error|结束连接|
+## 包级方法
+
+|函数|作用|
+|:--:|:--:|
+|NewClient(conn net.Conn, host string) (*smtp.Client, error)| 创建smtp连接|
+|PlainAuth(identity string, username string, password string, host string) smtp.Auth|创建认证|
 
