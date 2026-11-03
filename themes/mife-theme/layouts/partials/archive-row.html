@@ -1,0 +1,23 @@
+{{ $page := .page }}
+<article class="archive-row">
+    <div class="archive-row-date">
+        <span class="visually-hidden" data-zh="发布于 " data-en="Published ">发布于 </span><time datetime="{{ $page.Date.Format "2006-01-02" }}">{{ $page.Date.Format "2006-01-02" }}</time>
+    </div>
+    <div class="archive-row-main">
+        <h2 class="archive-row-title"><a href="{{ $page.Permalink }}"><span>{{ $page.Title }}</span><span class="archive-row-arrow" aria-hidden="true">↗</span></a></h2>
+        {{ with $page.Params.tags }}
+        <div class="archive-row-tags">
+            {{ range . }}
+            <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}/" class="archive-tag">{{ . }}</a>
+            {{ end }}
+        </div>
+        {{ end }}
+        {{ if .showSummary }}
+        <p class="archive-row-summary">{{ $page.Summary | plainify | truncate 150 }}</p>
+        <a href="{{ $page.Permalink }}" class="archive-read-more" data-zh="阅读更多 →" data-en="Read more →">阅读更多 →</a>
+        {{ end }}
+    </div>
+    <div class="archive-row-updated">
+        <span data-zh="更新于" data-en="Updated">更新于</span><time datetime="{{ $page.Lastmod.Format "2006-01-02" }}">{{ $page.Lastmod.Format "2006-01-02" }}</time>
+    </div>
+</article>

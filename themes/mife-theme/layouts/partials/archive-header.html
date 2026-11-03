@@ -1,0 +1,16 @@
+<header class="archive-header">
+    <div class="archive-heading">
+        <p class="archive-eyebrow"><span aria-hidden="true"></span>{{ .eyebrow }}</p>
+        <h1 class="archive-title" data-zh="{{ .titleZh }}" data-en="{{ .titleEn }}">{{ .titleZh }}</h1>
+        <p class="archive-description" data-zh="{{ .descriptionZh }}" data-en="{{ .descriptionEn }}">{{ .descriptionZh }}</p>
+    </div>
+    <div class="archive-count">
+        <span class="archive-count-number">{{ printf "%02d" .count }}</span>
+        <span class="archive-count-label" data-zh="{{ .countZh }}" data-en="{{ .countEn }}">{{ .countZh }}</span>
+    </div>
+</header>
+<div class="archive-columns" aria-hidden="true">
+    <span data-zh="发布日期" data-en="PUBLISHED">发布日期</span>
+    <span data-zh="标题 / 标签" data-en="TITLE / TAGS">标题 / 标签</span>
+    <span data-zh="最近更新" data-en="LAST UPDATED">最近更新</span>
+</div>

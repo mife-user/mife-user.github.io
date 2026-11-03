@@ -1,24 +1,15 @@
 {{ define "main" }}
-<section class="section list-page">
-    <h2 class="section-title" data-zh="项目" data-en="PROJECTS">项目</h2>
-    <div class="project-list">
-        {{ range where .Site.RegularPages "Section" "projects" }}
-        <article class="project-card">
-            <div class="project-meta">
-                <div class="project-date">{{ .Date.Format "2006-01-02" }}</div>
-                {{ with .Params.tags }}
-                <div class="project-tags">
-                    {{ range . }}
-                    <a href="{{ "/tags/" | relLangURL }}{{ . | urlize }}/" class="tag-link">{{ . }}</a>
-                    {{ end }}
-                </div>
-                {{ end }}
-            </div>
-            <h3 class="project-title">
-                <a href="{{ .Permalink }}">{{ .Title }}</a>
-            </h3>
-            <div class="post-updated" data-zh="更新于 {{ .Lastmod.Format "2006-01-02" }}" data-en="Updated {{ .Lastmod.Format "2006-01-02" }}">更新于 {{ .Lastmod.Format "2006-01-02" }}</div>
-        </article>
+{{ $projects := where .Site.RegularPages "Section" "projects" }}
+<section class="section archive-page">
+    {{ partial "archive-header.html" (dict
+        "eyebrow" "02 / PROJECT INDEX"
+        "titleZh" "项目" "titleEn" "PROJECTS"
+        "descriptionZh" "从想法到实现的项目记录。" "descriptionEn" "Projects from idea to implementation."
+        "count" (len $projects) "countZh" "个项目" "countEn" "PROJECTS"
+    ) }}
+    <div class="archive-list">
+        {{ range $projects }}
+        {{ partial "archive-row.html" (dict "page" .) }}
         {{ end }}
     </div>
 </section>
