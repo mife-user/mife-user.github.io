@@ -6,6 +6,7 @@ draft: false
 tags: ["go"]
 ---
 
+
 # 命令行
 ```bash
 go env #打印go的所有环境变量
