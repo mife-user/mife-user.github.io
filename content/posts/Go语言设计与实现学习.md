@@ -1230,3 +1230,30 @@ func main() {
 	c.(*Cat).Quack()
 }
 ```
+这里一个一接口类型调用，需要动态派发，第二个用*Cat具体类型调用，编译时就会确定调用的函数。
+
+Cat结构体初始化先初始化Cat结构体指针，然后将CAt和tab打包成一个runtime.iface类型得结构体。
+
+![动态](/images/动态派发栈.png)
+
+这里插播一下，GC中通过Stack mao查看栈中的指针，每个函数在funcdata在有：
+- FUNCDATA_LocalsPointerMaps
+- FUNCDATA_ArgsPointerMaps
+
+GC扫描栈时：
+- 根据 PC 找到当前帧的 stack map。
+- 对每个置 1 的 word 调 greyobject 标记。
+- tab 指向 itab（全局表或堆上动态分配的 itab），标记它；data 指向具体值对象，标记它。
+
+
+ok，现在进入动态派发过程，：
+```go
+MOVQ	"".c+48(SP), AX                    ;; AX = iface(c).tab
+MOVQ	24(AX), AX                         ;; AX = iface(c).tab.fun[0] = Cat.Quack
+MOVQ	"".c+56(SP), CX                    ;; CX = iface(c).data
+MOVQ	CX, (SP)                           ;; SP = CX = &Cat{...}
+CALL	AX                                 ;; SP.Quack()
+```
+1. 从接口变量中获取保存Cat.Quack方法指针的tab.func[0]
+2. 接口变量在 runtime.iface 中的数据会被拷贝到栈顶
+3. 方法指针会被拷贝到寄存器中并通过汇编指令 CALL 触发
