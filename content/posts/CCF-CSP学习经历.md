@@ -1,7 +1,7 @@
 ---
 title: 'CCF CSP学习经历'
 date: 2026-08-26T22:25:36+08:00
-lastmod: 2026-08-26T22:25:36+08:00
+lastmod: 2026-11-08T22:25:36+08:00
 draft: false
 tags: ["CCF", "CSP","竞赛"]
 ---
@@ -544,3 +544,33 @@ public:
 # 结语
 
 - 第一次考试：140分，可惜，准备不够充分，下次继续努力😃
+
+# 第二次
+
+## 注意事项
+
+scanf与printf使用方法：
+
+| 类型 | 输入 | 输出 |
+| --- | --- | --- |
+| int | `%d` | `%d` |
+| long long | `%lld` | `%lld` |
+| unsigned | `%u` | `%u` |
+| double | `%lf` | `%f` |
+| long double | `%Lf` | `%Lf` |
+| char | `%c` | `%c` |
+| string(char[]) | `%s` | `%s` |
+| size_t | `%zu` | `%zu` |
+
+⚠️ double 输入必须 %lf，输出用 %f（输出用 %lf 在部分平台也行但不标准）。在" %d",前面加上“ ”空格以防止换行读取
+
+
+cin与cout加速方法：
+```c++
+ios::sync_with_stdio(false);
+cin.tie(nullptr);
+```
+
+map中count函数是用来判断某个键是否存在，存在返回一，不存在返回0；
+
+char[]读取长度用strlen()，用sizeof()返回的是容量字节，比如char a[100]，a = "hello"，则sizeof返回的是100（因为char一个刚好一个字节），而strlen返回的是5.
