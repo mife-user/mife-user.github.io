@@ -574,3 +574,11 @@ cin.tie(nullptr);
 map中count函数是用来判断某个键是否存在，存在返回一，不存在返回0；
 
 char[]读取长度用strlen()，用sizeof()返回的是容量字节，比如char a[100]，a = "hello"，则sizeof返回的是100（因为char一个刚好一个字节），而strlen返回的是5.
+
+## 函数
+```c++
+#include<cmath>
+std::sqrt()//平方根
+std::cbrt()//立方根
+double modf(double value, double* iptr)//获取整数和小数部分
+```

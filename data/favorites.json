@@ -54,6 +54,12 @@
         "url": " https://www.producthunt.com/",
         "desc": "独立开发者的“新品发布会”",
         "icon": "📑"
+      },
+      {
+        "title": "Two Moons",
+        "url": "https://two-moons.site/",
+        "desc": "音乐学习网站，提供曲谱、教学与练习资源。",
+        "icon": "🎵"
       }
     ]
   },

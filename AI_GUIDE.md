@@ -264,6 +264,21 @@ issueLabel = 'comments'
 
 **控制**: 左下角音乐按钮，支持播放/暂停
 
+#### 文章和项目中的音乐
+
+在文章或项目的 Markdown 正文中使用以下语法：
+
+```markdown
+![音乐](/voices/学习.mp3)
+![音乐](/voices/学习.mp3 "学习旋律")
+![音乐](https://example.com/song.mp3)
+```
+
+- 第一种写法显示默认标题“音乐”；第二种用 Markdown 的可选标题指定曲名。
+- 本地文件放在 `static/` 下：例如 `static/voices/学习.mp3` 对应 `/voices/学习.mp3`。也可使用相对页面 URL 的路径或可直接访问的音频 URL；路径包含空格时可写成 `![音乐](</voices/我的 音乐.mp3>)`。
+- 使用浏览器原生音频控件，不自动播放，格式是否可播放取决于浏览器及音频来源；正文播放器、背景音乐之间会互相暂停。普通图片语法不变。
+- 渲染钩子位于 `layouts/_default/_markup/render-image.html`，样式位于 `partials/head.html`，播放互斥逻辑位于 `partials/footer.html`。
+
 ### 5. 数学公式渲染 (KaTeX)
 **位置**: `footer.html`（加载脚本）+ `head.html`（内联 CSS）+ `static/js/katex*`
 

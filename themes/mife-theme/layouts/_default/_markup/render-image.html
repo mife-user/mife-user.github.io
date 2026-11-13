@@ -1,0 +1,17 @@
+{{- if and (eq .PlainText "音乐") (or (eq .Page.Section "posts") (eq .Page.Section "projects")) -}}
+  {{- $labelID := printf "embedded-audio-%s-%d" (md5 .Page.RelPermalink) .Ordinal -}}
+  <span class="embedded-audio">
+    <span class="embedded-audio-heading">
+      <span class="embedded-audio-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path></svg>
+      </span>
+      <span class="embedded-audio-name" id="{{ $labelID }}"{{ if not .Title }} data-zh="音乐" data-en="Music"{{ end }}>{{ .Title | default "音乐" }}</span>
+    </span>
+    <audio class="embedded-audio-element" src="{{ .Destination }}" controls preload="none" aria-labelledby="{{ $labelID }}">
+      <span data-zh="您的浏览器不支持音频播放。" data-en="Your browser does not support audio playback.">您的浏览器不支持音频播放。</span>
+      <a href="{{ .Destination }}" data-zh="下载音频" data-en="Download audio">下载音频</a>
+    </audio>
+  </span>
+{{- else -}}
+  <img src="{{ .Destination | safeURL }}" alt="{{ .PlainText }}"{{ with .Title }} title="{{ . }}"{{ end }}>
+{{- end -}}

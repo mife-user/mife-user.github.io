@@ -19,9 +19,13 @@ bash build.sh
 # Create content
 hugo new content posts/标题.md
 hugo new content projects/项目名称.md
+
+# Music rendering and playback-coordination regression tests
+python -I tests/test_music_render.py
+node tests/test_music_playback.js
 ```
 
-No tests, no linting — this is a static site. Deployment is automatic: push to `main` triggers `.github/workflows/hugo.yml` which builds with `hugo --gc --minify` and deploys to GitHub Pages.
+No linting is configured. Deployment is automatic: push to `main` triggers `.github/workflows/hugo.yml` which builds with `hugo --gc --minify` and deploys to GitHub Pages.
 
 ## Architecture
 
@@ -49,6 +53,7 @@ archetypes/            # Hugo content templates
 - **All CSS is inline in `head.html`** `<style>` tags. **All JS is inline in `footer.html`** `<script>` tags. No external CSS/JS files.
 - **Tags format**: must use JSON array `tags: ["标签1", "标签2"]` in front matter — do NOT use YAML list format.
 - **Search**: Hugo template in `footer.html` embeds all posts + projects as a JS array at build time. Search is client-side only.
+- **Music in content**: `![音乐](/voices/file.mp3 "Optional title")` renders a native audio player in posts and projects; the image render hook is in `_default/_markup/render-image.html`. Content audio and the background player pause each other.
 - **Math**: KaTeX + auto-render rendered client-side (CDN-first, local `static/js/` fallback). Inline `$...$` / `\(...\)`, display `$$...$$` / `\[...\]`. CSS inlined in `head.html`, fonts at `static/js/fonts/`.
 - **i18n**: `data-zh` / `data-en` attributes on elements, toggled by JS in footer.html.
 - **Comments**: Utterances widget loaded in `partials/utterances-comments.html`, uses GitHub Issues with label `comments`.

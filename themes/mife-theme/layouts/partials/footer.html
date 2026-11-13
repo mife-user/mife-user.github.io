@@ -119,7 +119,9 @@
     }
 
     function playTrack() {
-        bgMusic.play().catch(function(){});
+        bgMusic.play().catch(function() {
+            if (bgMusic.paused) setPlayState(false);
+        });
         setPlayState(true);
     }
 
@@ -127,6 +129,18 @@
         bgMusic.pause();
         setPlayState(false);
     }
+
+    // 正文音频与背景音乐互斥，避免多个播放器同时出声。
+    document.addEventListener('play', function(event) {
+        var active = event.target;
+        if (active !== bgMusic && !active.classList.contains('embedded-audio-element')) return;
+        if (active.paused) return;
+
+        document.querySelectorAll('.embedded-audio-element').forEach(function(audio) {
+            if (audio !== active && !audio.paused) audio.pause();
+        });
+        if (active !== bgMusic && !bgMusic.paused) pauseTrack();
+    }, true);
 
     function toggleMusic() {
         if (isPlaying) pauseTrack(); else playTrack();
@@ -294,14 +308,12 @@
     // 曲目结束时自动播放下一首
     bgMusic.addEventListener('ended', nextTrack);
 
-    // 页面加载完成后尝试自动播放
+    // 页面加载完成后尝试自动播放；正文音频已播放时不打断它。
     window.addEventListener('load', function() {
         if (!playlist.length) return;
-        bgMusic.play().then(function() {
-            setPlayState(true);
-        }).catch(function() {
-            setPlayState(false);
-        });
+        var embeddedPlaying = Array.from(document.querySelectorAll('.embedded-audio-element'))
+            .some(function(audio) { return !audio.paused; });
+        if (!embeddedPlaying) playTrack();
     });
 
     renderPlaylist();

@@ -1,7 +1,7 @@
 ---
 title: 'Mysql学习'
 date: 2026-09-17T19:22:53+08:00
-lastmod: 2026-09-27T15:10:04+08:00
+lastmod: 2026-11-12T15:10:04+08:00
 draft: false
 tags: ["mysql", "八股"]
 ---
@@ -93,10 +93,19 @@ INTERSECT --相比于UNION，其用来查询交集
 EXCEPT --用来查询差集
 -- 子查询，通过嵌套SELECT等实现多层查询
 ```
-
+![DDL表](/images/DDL.png)
+![DDL库](/images/DDL库.png) 
+![DML](/images/DML.png)
+![DQL](/images/DQL.png)
+![DQL基本查询](/images/DQL基本查询.png)
+![DQL查询](/images/DQL查询.png)
+![DQL聚合](/images/DQL聚合.png)
+![DQL分组](/images/DQL分组.png)
+![DQL排序](/images/DQL排序.png)
+![DQL分页](/images/DQL分页.png)
 ## 八股
 
-我想了想，在现在这个时代真要一点一点写笔记太慢了，要看八简易直接看写好的文章：小林coding，这里删除了原来的内容，现在决定就记录一些问题。
+我想了想要看八简易直接看写好的文章：小林coding，这里删除了原来的内容，现在决定就记录一些问题。
 
 ### Mysql具体存储逻辑
 

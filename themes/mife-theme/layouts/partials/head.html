@@ -1055,6 +1055,69 @@
         }
     }
 
+    /* 文章和项目正文中的音频 */
+    .content .embedded-audio {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: min(100%, 32rem);
+        margin: 1rem 0;
+        padding: 1rem 1.2rem;
+        text-align: left;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), transparent 65%), rgba(14, 14, 14, 0.92);
+        border: 1px solid rgba(212, 175, 55, 0.28);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .content .embedded-audio-heading {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+        line-height: 1.4;
+    }
+
+    .content .embedded-audio-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 2.25rem;
+        height: 2.25rem;
+        color: var(--gold-primary);
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid rgba(212, 175, 55, 0.24);
+        border-radius: 8px;
+    }
+
+    .content .embedded-audio-icon svg {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+
+    .content .embedded-audio-name {
+        min-width: 0;
+        color: var(--gold-light);
+        font-size: 0.95rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .content .embedded-audio-element {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        color-scheme: dark;
+        accent-color: var(--gold-primary);
+    }
+
+    @media (max-width: 480px) {
+        .content .embedded-audio {
+            padding: 0.85rem;
+        }
+    }
+
     /* ========== 音乐播放器 — 音符按钮 + 播放列表 ========== */
     .music-player {
         position: fixed;
