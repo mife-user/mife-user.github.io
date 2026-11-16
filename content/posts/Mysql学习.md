@@ -102,7 +102,12 @@ EXCEPT --用来查询差集
 ![DQL聚合](/images/DQL聚合.png)
 ![DQL分组](/images/DQL分组.png)
 ![DQL排序](/images/DQL排序.png)
-![DQL分页](/images/DQL分页.png)
+![DQL分页](/images/DQL分页.png)  
+![DCL管理](/images/DCL管理.png)  
+![DCL权限](/images/DCL权限.png)  
+![DCL权限1](/images/DCL权限1.png)
+执行顺序：  
+FROM->WHERE->GROUP BY->HAVING->SELECT->ORDERBY->LIMIT
 ## 八股
 
 我想了想要看八简易直接看写好的文章：小林coding，这里删除了原来的内容，现在决定就记录一些问题。

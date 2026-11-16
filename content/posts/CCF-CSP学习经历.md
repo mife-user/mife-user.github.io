@@ -580,5 +580,5 @@ char[]读取长度用strlen()，用sizeof()返回的是容量字节，比如char
 #include<cmath>
 std::sqrt()//平方根
 std::cbrt()//立方根
-double modf(double value, double* iptr)//获取整数和小数部分
+double std::modf(double value, double* iptr)//获取整数和小数部分
 ```

@@ -15,6 +15,9 @@ tags: ["linux"]
 |ls|输出当前目录下的文件名称|
 |tail -n 100 文件名|查看文件最后100行|
 |tail -n +100 文件名|从第 100 行开始，一直显示到文件末尾|
+|ls -l|看文件的基本信息|
+|ls -lh|让格式人类易读|
+|stat xxx|看xxx文件更多信息|
 ## 详细
 
 ### 程序
@@ -89,4 +92,22 @@ pkill -9 your_program_name
 #终止所有与给定名称完全匹配的进程
 killall your_program_name
 ```
+
+# ls
+```text
+-rw-r--r-- 1 user group 1.2K Oct 26 10:00 example.txt
+```
+-rw-r--r--：权限。首字符 - 表示普通文件，d 表示目录。后续9位是所有者、组、其他人的读(r)/写(w)/执行(x)权限。
+
+1：硬链接数。
+
+user：所有者。
+
+group：所属组。
+
+1.2K：文件大小（-h 生效时）。
+
+Oct 26 10:00：最后修改时间。
+
+example.txt：文件名。
 
