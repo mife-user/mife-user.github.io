@@ -105,7 +105,11 @@ EXCEPT --用来查询差集
 ![DQL分页](/images/DQL分页.png)  
 ![DCL管理](/images/DCL管理.png)  
 ![DCL权限](/images/DCL权限.png)  
-![DCL权限1](/images/DCL权限1.png)
+![DCL权限1](/images/DCL权限1.png)  
+![字符串函数](/images/字符串函数.webp)  
+![数值函数](/images/数值函数.webp)  
+![日期函数](/images/日期函数.webp)  
+![流程函数](/images/流程函数.webp)
 执行顺序：  
 FROM->WHERE->GROUP BY->HAVING->SELECT->ORDERBY->LIMIT
 ## 八股

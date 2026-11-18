@@ -94,6 +94,16 @@ CSP比赛我觉得是值得打的，相比于ACM肯定轻松点，相比蓝桥�
     - `pair<int,int> p2 = {1,2}`
   - 访问：p.first访问第一个元素，p.second访问第二个元素。
   - 判同："=="
+- deque(双端队列)：
+  - 构造：deque<类型> dq;
+  - 队头插入：push_front(val);
+  - 队尾插入：push_back();
+  - 删除队头：pop_front();
+  - 删除队尾：pop_back();
+  - 返回队尾：back();
+  - 返回队头：front();
+  - 清空：clear();
+  - 大小：size();
 
 注意尽量不要用迭代器操作容器
 
