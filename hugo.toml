@@ -2,6 +2,7 @@ baseURL = 'https://mife-user.github.io/'
 languageCode = 'zh-CN'
 title = 'MIFE Blog'
 theme = 'mife-theme'
+enableRobotsTXT = true
 
 [markup]
   [markup.tableOfContents]
@@ -17,6 +18,7 @@ theme = 'mife-theme'
 
 [params]
   author = 'MIFE'
+  description = 'MIFE 的技术博客，记录 Go、计算机基础、微服务、Linux 与 AI 的学习实践和项目经验。'
   username = 'mife'
   bio = '开发者 · 创作者 · 探索者'
   github = 'https://github.com/mife-user'

@@ -1,0 +1,44 @@
+{{- $title := cond .IsHome .Site.Title (printf "%s - %s" .Title .Site.Title) -}}
+{{- $description := .Description | default .Summary | default .Site.Params.description | plainify | htmlUnescape | replaceRE "\\s+" " " | strings.TrimSpace | truncate 160 -}}
+{{- $image := .Site.Params.avatar -}}
+{{- with .Params.images -}}
+  {{- $image = index . 0 -}}
+{{- else with .Params.image -}}
+  {{- $image = . -}}
+{{- end -}}
+{{- $imageURL := $image | absURL -}}
+{{- $ogType := "website" -}}
+{{- if and .IsPage (or (eq .Section "posts") (eq .Section "projects")) -}}
+  {{- $ogType = "article" -}}
+{{- end -}}
+<meta name="description" content="{{ $description }}">
+<link rel="canonical" href="{{ .Permalink }}">
+<meta property="og:locale" content="{{ replace .Site.LanguageCode "-" "_" }}">
+<meta property="og:type" content="{{ $ogType }}">
+<meta property="og:site_name" content="{{ .Site.Title }}">
+<meta property="og:title" content="{{ $title }}">
+<meta property="og:description" content="{{ $description }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta property="og:image" content="{{ $imageURL }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $title }}">
+<meta name="twitter:description" content="{{ $description }}">
+<meta name="twitter:image" content="{{ $imageURL }}">
+{{- if eq $ogType "article" }}
+<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
+<meta property="article:modified_time" content="{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}">
+{{- end }}
+{{- if .IsHome -}}
+  {{- $person := dict "@type" "Person" "name" .Site.Params.author "url" .Site.BaseURL "image" $imageURL "sameAs" (slice .Site.Params.github) -}}
+  {{- $website := dict "@type" "WebSite" "name" .Site.Title "url" .Site.BaseURL "description" $description "inLanguage" .Site.LanguageCode "publisher" $person -}}
+  {{- $schema := dict "@context" "https://schema.org" "@graph" (slice $website $person) -}}
+<script type="application/ld+json">{{ $schema | jsonify | safeJS }}</script>
+{{- else if eq .Section "posts" -}}
+  {{- $author := dict "@type" "Person" "name" .Site.Params.author "url" .Site.BaseURL -}}
+  {{- $schema := dict "@context" "https://schema.org" "@type" "BlogPosting" "headline" .Title "description" $description "url" .Permalink "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink) "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") "author" $author "publisher" $author "image" $imageURL "inLanguage" .Site.LanguageCode -}}
+<script type="application/ld+json">{{ $schema | jsonify | safeJS }}</script>
+{{- else if eq .Section "projects" -}}
+  {{- $author := dict "@type" "Person" "name" .Site.Params.author "url" .Site.BaseURL -}}
+  {{- $schema := dict "@context" "https://schema.org" "@type" "CreativeWork" "name" .Title "description" $description "url" .Permalink "dateCreated" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") "author" $author "image" $imageURL "inLanguage" .Site.LanguageCode -}}
+<script type="application/ld+json">{{ $schema | jsonify | safeJS }}</script>
+{{- end -}}

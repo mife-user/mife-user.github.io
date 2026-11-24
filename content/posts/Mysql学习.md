@@ -114,8 +114,6 @@ EXCEPT --用来查询差集
 FROM->WHERE->GROUP BY->HAVING->SELECT->ORDERBY->LIMIT
 ## 八股
 
-我想了想要看八简易直接看写好的文章：小林coding，这里删除了原来的内容，现在决定就记录一些问题。
-
 ### Mysql具体存储逻辑
 
 1. 分为页，区，段，行，整体层级：表空间 -> 段 -> 区 -> 页 -> 行。
